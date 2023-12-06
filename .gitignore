@@ -6,3 +6,4 @@ __pycache__/common.cpython-36.pyc
 screenlog.0
 *.png
 results/
+simulation/__pycache__
