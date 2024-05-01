@@ -24,9 +24,6 @@ from fractions import Fraction as frac
 from models import Models
 
 
-ADDITIONAL_SERVICE_PER_JOB = 0
-
-
 
 WORKLOADS = ["workload_0e4a51",
     "workload_b436b2",
@@ -99,7 +96,7 @@ def generate_rect_jobs(app_id, num_jobs, service, max_gpus_per_job, min_gpus_per
     jobs = {}
 
     for job_id in range(num_jobs):
-        job = Job(app_id=app_id, job_id=job_id, service=ADDITIONAL_SERVICE_PER_JOB + (service/num_jobs),
+        job = Job(app_id=app_id, job_id=job_id, service= (service/num_jobs),
                             demand=np.random.choice(max_gpus_per_job),
                             min_demand=np.random.choice(min_gpus_per_job))    
         
