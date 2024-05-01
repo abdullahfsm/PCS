@@ -9,6 +9,10 @@
 
 * Run `bash setup.sh` and follow all prompts. 
 
+## Regenerating Figures
+
+* Run `jupyter notebook regenerate_plots.ipynb` and execute the cells to (re)generate plots from our paper
+
 ## Running Simulation 
 
 * Run `python3 reproduce.py -h` to see which traces and workloads are acceptable for correct usage. 
