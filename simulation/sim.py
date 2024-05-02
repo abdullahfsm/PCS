@@ -436,7 +436,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-load', help = "load", type=float, default=0.8)
     parser.add_argument('-num_gpus', help='num_gpus', default=1, type=int)
-    parser.add_argument('-num_apps', help="number of apps to generate", type=int, default=1)
+    parser.add_argument('-num_apps', help="number of apps to generate", type=int, default=100)
 
     parser.add_argument('-scheduling_policy', help="Scheduling policy", type=str, default="FIFO")
     parser.add_argument('-logging', help="logging verbosity (0-2)", default=1, type=int)
