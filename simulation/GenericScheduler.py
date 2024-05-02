@@ -1,6 +1,5 @@
 import random
 import os, sys
-from helpers import flat_map
 
 from datetime import datetime, timedelta
 
@@ -15,40 +14,7 @@ from functools import partial
 import ray
 import math
 
-from ray.util.queue import Queue
-# from pympler import asizeof
-
-import asyncio
-
-MAX_APPS = 30
-
 from time import sleep
-
-
-'''
-@ray.remote
-def pickle_reader(estimator, fname, N):
-    i = 0
-    futures = list()
-
-    while i < N:
-        with open(fname,'rb') as fp:
-
-            try:
-                for _ in range(i+1):
-                    obj = pickle.load(fp)
-            except Exception as e:
-                sleep(0.1)
-
-        active_apps, app_id, event_time = obj
-        estimator.active_apps = active_apps
-
-
-        # pickle.dump([self._active_apps,app.app_id,event_time], self._pp)
-        # self._ray_queue.put([self._active_apps,app.app_id,event_time])
-
-        # f = scheduler_run_ray.remote(self._estimator,app.app_id,event_time)
-'''
 
 
 @ray.remote
@@ -60,30 +26,6 @@ def multi_runner(batch_snap_shots):
     return futures
 
 
-@ray.remote
-def ray_queue_runner(ray_queue, N):
-    tasks_completed = 0
-    futures = list()
-    finished_futures = list()
-    results = list()
-    while tasks_completed != N:
-        batch = ray_queue.get()
-        print(f"got task {tasks_completed+1}")
-        snap_shot, app_id, event_time = batch
-        # futures.append(dummy_func.remote())
-        futures.append(scheduler_run_ray.remote(snap_shot, app_id, event_time))
-        tasks_completed += 1
-
-
-
-    while futures:
-        finished, futures = ray.wait(futures)
-        finished_futures += finished
-
-    for future in finished_futures:
-        results.append(ray.get(future))
-
-    return results
 
 @ray.remote
 def scheduler_run_ray(snap_shot, app_id, event_time):
@@ -101,11 +43,6 @@ def scheduler_run_ray(snap_shot, app_id, event_time):
     snap_shot.run(partial(break_cond, snap_shot._app_list[app_id]))
     
     return app_id, snap_shot._app_list[app_id].start_time, snap_shot._app_list[app_id].end_time
-
-@ray.remote
-def dummy_func():
-    sleep(10)
-    return 0,datetime.now(),datetime.now()
 
 class AppGenericScheduler(object):
     """This class implements a Generic Scheduler for apps"""
@@ -202,7 +139,6 @@ class AppGenericScheduler(object):
 
         # assert(app.status == App.SUBMITTED), app.status
 
-        # assert(len(self._active_apps) <= MAX_APPS), len(self._active_apps)
 
         app.training_example = {"id": app.app_id}
         app.training_example["service"] = app.remaining_service
@@ -614,12 +550,9 @@ class AppGenericScheduler(object):
 
 
             if not ray.is_initialized():
-                ray.init(ignore_reinit_error=True)
+                ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
 
-            # self._ray_queue = Queue(actor_options={"num_cpus": 1})
-            # self._sim_futures = ray_queue_runner.remote(self._ray_queue, len(self._event_queue))
-            # async_promises = list()
-            # self._sim_futures = ray_queue_runner.remote(self._ray_queue, 0)
+
             self._sim_futures = list()
 
         while len(self._event_queue) > 0 or self._closest_end_event:
@@ -754,80 +687,3 @@ class AppGenericScheduler(object):
     @property
     def num_finished_apps(self):
         return self._num_finished_apps
-
-
-    def old_stuff(self):
-        # with open("pickle_dump_snaps",'rb') as fp:
-        #     for _ in range(len(self._app_list)):
-        #         obj = pickle.load(fp)
-        #         active_apps, app_id, event_time, last_event_time = obj
-        #         self._estimator._active_apps = active_apps
-        #         self._estimator._last_event_time = last_event_time
-        #         self._sim_futures.append(scheduler_run_ray.remote(self._estimator, app_id, event_time)) 
-
-        # total_tasks = len(self._sim_futures)
-        # finished_futures = list()
-        
-        # while self._sim_futures:
-        #     finished, self._sim_futures = ray.wait(self._sim_futures)
-        #     finished_futures += finished
-        
-        # print("\n")
-        # for future in finished_futures:            
-        #     app_id, estimated_start_time, estimated_end_time = ray.get(future)
-        #     self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
-        #     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
-        #     if self._verbosity == 4:
-        #         print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
-
-
-        # # sim_results = ray.get(self._sim_futures)
-
-        # for sim_result in sim_results:
-        #     app_id, estimated_start_time, estimated_end_time = sim_result
-        #     self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
-
-
-
-
-        # for p in async_promises:
-        #     if p:
-        #         await p
-
-
-        # print("\nDone with promises")
-
-        # sim_results = ray.get(self._sim_futures)
-
-        # for sim_result in sim_results:
-        #     app_id, estimated_start_time, estimated_end_time = sim_result
-        #     self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
-        #     # if self._verbosity == 4:
-        #     #     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
-
-
-
-        '''
-        if len(self._snap_shots) > 0:
-            futures.append(multi_runner.remote(self._snap_shots))
-
-        batched_futures = ray.get(futures)
-        futures = []
-        for b in batched_futures:
-            futures += b
-
-        total_tasks = len(futures)
-        finished_futures = list()
-        
-        while futures:
-            finished, futures = ray.wait(futures)
-            finished_futures += finished
-        
-        for future in finished_futures:            
-            app_id, estimated_start_time, estimated_end_time = ray.get(future)
-            self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
-            if self._verbosity == 4:
-                print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
-        '''
-
-        pass
