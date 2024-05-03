@@ -18,12 +18,12 @@ list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
 head_node, *worker_nodes = list_of_nodes[:]
 
 
-def check_ssh(ip):
-    result = subprocess.run(['ssh', '-o', 'BatchMode=yes', ip, 'exit'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
-
-
 def setup_keys():
+    def check_ssh(ip):
+        result = subprocess.run(['ssh', '-o', 'BatchMode=yes', ip, 'exit'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+
+
     os.system(f'bash setup_keys.sh {N} {user_name}')
     time.sleep(1)
     
@@ -103,6 +103,13 @@ def cluster_reboot():
 
 
 def increase_file_limit():
+    def check_ulimit(ip):
+        print(f"Checking ulimit -n on {ip}")
+        command = f"ssh {ip} 'ulimit -n'"
+        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return result.returncode == 0 and result.stdout.strip() == "100000"
+
+
     limit = 100000
 
     with open("/etc/security/limits.conf", "r") as f:
@@ -128,6 +135,14 @@ def increase_file_limit():
         os.system(f"sudo rsync -e 'ssh -o StrictHostKeyChecking=no' /etc/security/limits.conf {node}:/etc/security/")
 
 
+
+
+    for node in list_of_nodes:
+
+        if check_ulimit(node):
+            print(f"ulimit -n is 100000 on {node}")
+        else:
+            print(f"ulimit -n is NOT 100000 on {node}")
 
 def setup_ray_cluster():
     import ray
@@ -173,6 +188,18 @@ def setup_ray_cluster():
     print("Num of nodes: %d" % len(ray_nodes))
     print(ray.cluster_resources())
     print(ray.available_resources())
+
+
+
+def check_ulimit():
+
+    # List of IP addresses
+    IP_LIST = ["ip1", "ip2", "ip3"]
+
+
+    # Loop through each IP and check ulimit
+    for ip in IP_LIST:
+        check_ulimit(ip)
 
 
 
