@@ -39,12 +39,10 @@ lan = request.Link()
 lan.bandwidth = 20000000
 
 for node in range(params.n):
-    node_n0 = request.RawPC('n%d'%node)
-    node_n0.hardware_type = params.ntype
-    #node_n0.disk_image = 'urn:publicid:IDN+emulab.net+image+emulab-ops:UBUNTU18-64-STD'
-    node_n0.disk_image = 'urn:publicid:IDN+clemson.cloudlab.us+image+tuftscc-PG0:cuda-files-ubuntu18'
-    iface0 = node_n0.addInterface('interface-1%d'%node, pg.IPv4Address('10.1.1.%d'%(2+node),'255.255.255.0'))
-    lan.addInterface(iface0)
+    node_handle = request.RawPC('n%d'%node)
+    node_handle.hardware_type = params.ntype
+    node_handle.disk_image = 'urn:publicid:IDN+emulab.net+image+emulab-ops:UBUNTU22-64-STD'
+    lan.addInterface(node_handle.addInterface('interface-1%d'%node, pg.IPv4Address('10.1.1.%d'%(2+node),'255.255.255.0')))
     
 
 # Print the generated rspec
