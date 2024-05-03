@@ -143,7 +143,18 @@ def increase_file_limit():
         else:
             print(f"ulimit -n is NOT {limit} on {node}")
 
-def setup_ray_cluster():
+
+
+def install():
+    setup_keys()
+    rsync_cluster()
+    installer()
+    increase_file_limit()
+    cluster_reboot()
+
+
+
+def launch():
     import ray
 
     def get_ray_path():
@@ -192,9 +203,11 @@ def setup_ray_cluster():
 
 if __name__ == '__main__':
 
-    setup_keys()
-    rsync_cluster()
-    installer()
-    setup_ray_cluster()
-    increase_file_limit()
-    cluster_reboot()
+
+    if len(sys.argv) != 2:
+        print(f"usage: python3 cluster_utils.py install/launch")
+    else:
+        if sys.argv[1] in ["install", "launch"]:
+            globals()[sys.argv[1]]()
+        else:
+            print(f"usage: python3 cluster_utils.py install/launch")

@@ -13,4 +13,4 @@ Assuming that you have a cloudlab profile:
 ## Setting up cluster
 Assuming you can ssh into the head node of a cloudlab cluster:
 * Run `git clone https://github.com/abdullahfsm/PCS.git` at root directory followed by `cd ~/PCS/utils`
-* Run `python3 setup_cluster.py` This script takes a considerable time (~15 min) to install the required dependencies and upon successfully completing will reboot all the nodes (you will have to login to the cloudlab head node again)
+* Run `python3 setup_cluster.py` This script takes a considerable time (~15 min) to install the required dependencies and upon successfully completing will reboot all the nodes in the cluster(you will have to login to the cloudlab head node again)
