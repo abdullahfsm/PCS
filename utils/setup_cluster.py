@@ -125,7 +125,7 @@ def increase_file_limit():
 
 
     for node in worker_nodes:
-        os.system(f"sudo rsync /etc/security/limits.conf {node}:/etc/security/")
+        os.system(f"sudo rsync -e 'ssh -o StrictHostKeyChecking=no' /etc/security/limits.conf {node}:/etc/security/")
 
 
 
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     # rsync_cluster()
     # installer()
     # cluster_reboot()
-    setup_ray_cluster()
+    # setup_ray_cluster()
     increase_file_limit()
 
 
