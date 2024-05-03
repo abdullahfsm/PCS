@@ -4,7 +4,9 @@ import subprocess
 import sys
 
 
-user = os.path.expanduser('~')
+user_path = os.path.expanduser('~')
+user_name = user_path.split('/')[-1]
+
 
 with open("/var/emulab/boot/hostmap") as fp:
     N, *_ = fp.readlines()
@@ -13,13 +15,8 @@ head_ip, *worker_ips = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
 
 
 
-
-
 if __name__ == '__main__':
-    print(user)
-    print(head_ip)
-    print(worker_ips)
-
+    os.system(f'bash setup_keys.sh {N} {user_name}')
 
     
     # if len(sys.argv) != 2:
