@@ -6,12 +6,19 @@ if [ $# -lt 2 ]; then
     exit 1
 fi
 
-cp ~/.ssh/authorized_keys copy_authorized_keys
-cat ~/.ssh/authorized_keys > authorized_keys
-
 # num_nodes
 N=$1
 USER=$2
+
+
+echo $N
+echo $USER
+
+exit 1
+
+cp ~/.ssh/authorized_keys copy_authorized_keys
+cat ~/.ssh/authorized_keys > authorized_keys
+
 
 # create N keys
 for i in $(seq 0 $((N-1)))
@@ -24,7 +31,7 @@ done
 rm config
 
 cat /users/$USER/.ssh/config >> config
-
+echo "" >> config
 
 for i in $(seq 0 $((N-1)))
 do
