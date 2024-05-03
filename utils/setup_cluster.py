@@ -192,17 +192,9 @@ def setup_ray_cluster():
 
 if __name__ == '__main__':
 
-    if os.path.exists("/tmp/state"):
-        state = "dependencies_installed"
-    else:
-        state = None
-
-
-    if state != "dependencies_installed":
-        setup_keys()
-        rsync_cluster()
-        installer()
-        cluster_reboot()
-
+    setup_keys()
+    rsync_cluster()
+    installer()
     setup_ray_cluster()
     increase_file_limit()
+    cluster_reboot()
