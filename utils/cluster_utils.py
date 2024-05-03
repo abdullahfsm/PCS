@@ -203,7 +203,6 @@ def launch():
 
 if __name__ == '__main__':
 
-
     if len(sys.argv) != 2:
         print(f"usage: python3 cluster_utils.py install/launch")
     else:
