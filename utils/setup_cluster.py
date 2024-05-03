@@ -12,22 +12,6 @@ head_node, *worker_nodes = list_of_nodes[:]
 
 
 
-def installer(list_of_nodes):
-
-    threads = list()
-    for nodeIP in list_of_nodes:
-        
-
-        t = Thread(target=os.system, args=(f"ssh {nodeIP} <installer.sh",))
-        t.start()
-        threads.append(t)
-
-
-    for t in threads:
-        t.join()
-
-    print("installation done!")
-
 
 def configure_ray(list_of_nodes):
 
@@ -61,23 +45,41 @@ def configure_ray(list_of_nodes):
 
     print("configuration done")
 
-def create_partition(list_of_nodes):
-    
-    head_node, *worker_nodes = list_of_nodes[:]
 
-    for nodeIP in worker_nodes:
-        os.system(f"ssh {nodeIP} <create_partitions.sh")
-
-    os.system(f"ssh {head_node} <create_partitions.sh")
-
-
-def rsync_cluster(worker_nodes):
+def rsync_cluster():
     for node in worker_nodes:
         os.system(f"rsync -av {user}/PCS {node}:{user}/")
 
 
+def installer(exclude_head=False):
+
+
+    if exclude_head:
+        list_of_nodes = worker_nodes
+
+    threads = list()
+    for node in list_of_nodes:
+        
+
+        t = Thread(target=os.system, args=(f"ssh {node} <installer.sh",))
+        t.start()
+        threads.append(t)
+
+
+    for t in threads:
+        t.join()
+
+    print("installation done!")
+
+
+
+def cluster_reboot():
+    for node in worker_nodes:
+        os.system(f"ssh {node} sudo reboot")
+
 if __name__ == '__main__':
-    rsync_cluster
+    rsync_cluster()
+    installer()
 
 
     # for num in {2..21}; do scp jmetal_ray-1-py3-none-any.whl "10.1.1.$num:/users/abdffsm"; done
