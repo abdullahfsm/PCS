@@ -14,7 +14,6 @@ USER=$2
 echo $N
 echo $USER
 
-exit 1
 
 cp ~/.ssh/authorized_keys copy_authorized_keys
 cat ~/.ssh/authorized_keys > authorized_keys
@@ -26,6 +25,10 @@ do
     ssh-keygen -f k$i -N ""
     cat k$i.pub >> authorized_keys
 done
+
+exit 1
+
+
 
 #create config
 rm config
