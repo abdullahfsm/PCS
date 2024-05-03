@@ -26,10 +26,6 @@ do
     cat k$i.pub >> authorized_keys
 done
 
-exit 1
-
-
-
 #create config
 rm config
 
@@ -49,7 +45,6 @@ done
 #disseminate to all nodes
 for i in $(seq 0 $((N-1)))
 do
-
     cat k$i | sudo ssh n$i "cat > /users/${USER}/.ssh/key"
     cat k$i.pub | sudo ssh n$i "cat > /users/${USER}/.ssh/key.pub"
     cat authorized_keys | sudo ssh n$i "cat > /users/${USER}/.ssh/authorized_keys"
