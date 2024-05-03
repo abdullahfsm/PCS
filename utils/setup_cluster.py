@@ -2,7 +2,18 @@ import os, sys
 from threading import Thread
 
 
+user = os.path.expanduser('~')
+with open("/var/emulab/boot/hostmap") as fp:
+    N, *_ = fp.readlines()
+N = int(N.rstrip())
+list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
+
+head_node, *worker_nodes = list_of_nodes[:]
+
+
+
 def installer(list_of_nodes):
+
     threads = list()
     for nodeIP in list_of_nodes:
         
@@ -60,17 +71,18 @@ def create_partition(list_of_nodes):
     os.system(f"ssh {head_node} <create_partitions.sh")
 
 
-if __name__ == '__main__':
+def rsync_cluster(worker_nodes):
+    for node in worker_nodes:
+        os.system(f"rsync -av {user}/PCS {node}:{user}/")
 
-    with open("/var/emulab/boot/hostmap") as fp:
-        N, *_ = fp.readlines()
-    N = int(N.rstrip())
-    list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
+
+if __name__ == '__main__':
+    rsync_cluster
 
 
     # for num in {2..21}; do scp jmetal_ray-1-py3-none-any.whl "10.1.1.$num:/users/abdffsm"; done
 
     # create_partition(list_of_nodes)
-    installer(list_of_nodes)
+    # installer(list_of_nodes)
     # configure_ray(list_of_nodes)
 

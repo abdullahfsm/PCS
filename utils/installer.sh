@@ -18,7 +18,7 @@ sudo python3 -m pip install pandas
 sudo python3 -m pip install tabulate
 sudo python3 -m pip install matplotlib
 sudo python3 -m pip install hiredis
-sudo python3 -m pip install ray
+sudo python3 -m pip install ray==2.10.0
 
 
 # Driver + cuda toolkit
