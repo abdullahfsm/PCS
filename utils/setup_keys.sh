@@ -2,7 +2,6 @@
 
 
 if [ $# -lt 2 ]; then
-    # echo "Usage: $0 <command> <argument>"
     echo "Usage: $0 num_nodes user_name"
     exit 1
 fi
@@ -41,14 +40,10 @@ done
 for i in $(seq 0 $((N-1)))
 do
 
-    cat /users/$USER/.ssh/gitlab_key | sudo ssh -o StrictHostKeyChecking=no n$i "cat > /users/${USER}/.ssh/gitlab_key"
-    cat /users/$USER/.ssh/gitlab_key.pub | sudo ssh n$i "cat > /users/${USER}/.ssh/gitlab_key.pub"
     cat k$i | sudo ssh n$i "cat > /users/${USER}/.ssh/key"
     cat k$i.pub | sudo ssh n$i "cat > /users/${USER}/.ssh/key.pub"
     cat authorized_keys | sudo ssh n$i "cat > /users/${USER}/.ssh/authorized_keys"
     cat config | sudo ssh n$i "cat > /users/${USER}/.ssh/config"
-    sudo ssh n$i "ssh-keyscan gitlab.cs.tufts.edu >> /users/${USER}/.ssh/known_hosts"
-    # ssh-keyscan gitlab.cs.tufts.edu | sudo ssh n$i "cat >> /users/${USER}/.ssh/known_hosts"
 done
 
 
