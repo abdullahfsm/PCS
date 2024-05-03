@@ -90,6 +90,9 @@ def installer(exclude_head=False):
     for t in threads:
         t.join()
 
+
+    with open("/tmp/state", "w") as f:
+        f.write("dependencies_installed")
     print("installation done!")
 
 
@@ -104,7 +107,6 @@ def cluster_reboot():
 
 def increase_file_limit():
     def check_ulimit(ip):
-        print(f"Checking ulimit -n on {ip}")
         command = f"ssh {ip} 'ulimit -n'"
         result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return result.returncode == 0 and result.stdout.strip() == "100000"
@@ -135,12 +137,10 @@ def increase_file_limit():
         os.system(f"sudo rsync -e 'ssh -o StrictHostKeyChecking=no' /etc/security/limits.conf {node}:/etc/security/")
 
 
-
-
     for node in list_of_nodes:
 
         if check_ulimit(node):
-            print(f"ulimit -n is 100000 on {node}")
+            print(f"successfully set ulimit -n to 100000 on {node}")
         else:
             print(f"ulimit -n is NOT 100000 on {node}")
 
@@ -191,30 +191,19 @@ def setup_ray_cluster():
 
 
 
-def check_ulimit():
-
-    # List of IP addresses
-    IP_LIST = ["ip1", "ip2", "ip3"]
-
-
-    # Loop through each IP and check ulimit
-    for ip in IP_LIST:
-        check_ulimit(ip)
-
-
-
 if __name__ == '__main__':
-    # setup_keys()
-    # rsync_cluster()
-    # installer()
-    # cluster_reboot()
-    # setup_ray_cluster()
+
+    if os.path.exists("/tmp/state"):
+        state = "dependencies_installed"
+    else:
+        state = None
+
+
+    if state != dependencies_installed:
+        setup_keys()
+        rsync_cluster()
+        installer()
+        cluster_reboot()
+
+    setup_ray_cluster()
     increase_file_limit()
-
-
-    # for num in {2..21}; do scp jmetal_ray-1-py3-none-any.whl "10.1.1.$num:/users/abdffsm"; done
-
-    # create_partition(list_of_nodes)
-    # installer(list_of_nodes)
-    # configure_ray(list_of_nodes)
-
