@@ -6,8 +6,7 @@ import subprocess
 import fileinput
 
 user = os.path.expanduser('~')
-user_path = os.path.expanduser('~')
-user_name = user_path.split('/')[-1]
+user_name = user.split('/')[-1]
 
 
 with open("/var/emulab/boot/hostmap") as fp:
@@ -106,10 +105,10 @@ def cluster_reboot():
 
 
 def increase_file_limit():
-    def check_ulimit(ip):
+    def check_ulimit(ip, limit):
         command = f"ssh {ip} 'ulimit -n'"
         result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        return result.returncode == 0 and result.stdout.strip() == "100000"
+        return result.returncode == 0 and result.stdout.strip() == limit
 
 
     limit = 100000
@@ -117,10 +116,10 @@ def increase_file_limit():
     with open("/etc/security/limits.conf", "r") as f:
         contents = f.readlines()
 
-    values = [f"{user_name}            hard    nofile            100000\n",
-            f"{user_name}            soft    nofile            100000\n",
-            "root            hard    nofile            100000\n",
-            "root            soft    nofile            100000\n"]
+    values = [f"{user_name}            hard    nofile            {limit}\n",
+            f"{user_name}            soft    nofile            {limit}\n",
+            f"root            hard    nofile            {limit}\n",
+            f"root            soft    nofile            {limit}\n"]
 
     for value in values:
         contents.insert(-4, value)
@@ -139,10 +138,10 @@ def increase_file_limit():
 
     for node in list_of_nodes:
 
-        if check_ulimit(node):
-            print(f"successfully set ulimit -n to 100000 on {node}")
+        if check_ulimit(node, limit):
+            print(f"successfully set ulimit -n to {limit} on {node}")
         else:
-            print(f"ulimit -n is NOT 100000 on {node}")
+            print(f"ulimit -n is NOT {limit} on {node}")
 
 def setup_ray_cluster():
     import ray
