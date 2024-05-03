@@ -206,7 +206,8 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"usage: python3 cluster_utils.py install/launch")
     else:
-        if sys.argv[1] in ["install", "launch"]:
+
+        try:
             globals()[sys.argv[1]]()
-        else:
-            print(f"usage: python3 cluster_utils.py install/launch")
+        except Exception as e:
+            raise e

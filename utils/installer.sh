@@ -19,6 +19,8 @@ sudo python3 -m pip install tabulate
 sudo python3 -m pip install matplotlib
 sudo python3 -m pip install hiredis
 sudo python3 -m pip install ray==2.10.0
+sudo python3 -m pip install fsspec==2024.3.1
+sudo python3 -m pip install pyarrow==16.0.0
 
 
 # Driver + cuda toolkit

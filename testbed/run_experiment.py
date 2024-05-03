@@ -11,12 +11,10 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-# from ray.tune.schedulers.hyperband import HyperBandScheduler as HB
-# from ray.tune.schedulers.sync_successive_halving import SyncSuccessiveHalving as SHA
 from ray.tune.schedulers.sync_SHA_timed import SyncSHATimedScheduler as SHA
 from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
-from ray.tune.schedulers.trial_scheduler import FIFOScheduler as FIFO
 from tensorflow.keras import datasets, layers, models, regularizers, Input
+
 from ray.tune.integration.keras import TuneReportCallback
 from filelock import FileLock
 from ray.util.queue import Queue
