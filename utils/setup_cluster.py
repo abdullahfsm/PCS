@@ -199,7 +199,7 @@ if __name__ == '__main__':
         state = None
 
 
-    if state != dependencies_installed:
+    if state != "dependencies_installed":
         setup_keys()
         rsync_cluster()
         installer()
