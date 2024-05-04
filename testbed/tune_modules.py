@@ -72,7 +72,7 @@ class TimedFIFOScheduler(FIFOScheduler):
         return trial_id_to_estimated_remaining_time
 
 if __name__ == '__main__':
-    trial_scheduler=TimedFIFOScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
+    trial_scheduler=TimedFIFOScheduler(time_attr='time_total_s',budget=(1000/5))
 
 
 
