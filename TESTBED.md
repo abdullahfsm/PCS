@@ -1,4 +1,4 @@
-### Follow these instructions for setting up the GPU testbed on cloudlab
+# Follow these instructions for setting up the GPU testbed on cloudlab
 
 
 ## Starting a cloudlab experiment
