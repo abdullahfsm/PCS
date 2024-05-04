@@ -1,13 +1,16 @@
 import ray
 from RayGenericScheduler import RayAppGenericScheduler
 import os, sys
-from schedulers.common import Event, App, Job
 from datetime import datetime, timedelta
 from time import sleep
 import numpy as np
 from functools import partial
 import copy
-from schedulers.AFSScheduler import AppAFSScheduler
+
+
+from base.AFSScheduler import AppAFSScheduler
+from base.common import Event, App, Job
+
 
 class RayAppAFSScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
