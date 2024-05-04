@@ -271,6 +271,10 @@ def gen_workload_from_trace(fname, app_list, event_queue):
         next(csvReader)
         for row in csvReader:
 
+
+            if "#" in "".join(row):
+                continue
+
             app_id,submit_time,service,num_jobs,sleep_time = row
 
             app_id = int(app_id)
