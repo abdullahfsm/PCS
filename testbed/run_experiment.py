@@ -11,14 +11,21 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-from ray.tune.schedulers.sync_SHA_timed import SyncSHATimedScheduler as SHA
-from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
-from tensorflow.keras import datasets, layers, models, regularizers, Input
+
+
+
+# implemented
+from tune_modules import TimedFIFOScheduler as TrialScheduler
+
 
 from ray.tune.integration.keras import TuneReportCallback
+
+
+
+from tensorflow.keras import datasets, layers, models, regularizers, Input
+
 from filelock import FileLock
 from ray.util.queue import Queue
-from ray.tune.callback import Callback
 
 
 from datetime import datetime, timedelta
@@ -244,7 +251,7 @@ def tune_cifar10(app, event_queue, inactivity_time):
     # reduction_factor=2):
 
     # trial_scheduler=SHA(time_attr='time_total_s',budget=(app.service),num_samples=app.demand)
-    trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
+    trial_scheduler=TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
 
     
     # sched = FIFO(stop=ray.tune.stopper.MaximumIterationStopper(budget))
