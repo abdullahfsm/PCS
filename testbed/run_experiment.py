@@ -26,7 +26,7 @@ from time import sleep
 import logging
 
 
-from base.common import App, Job, Event
+from common import App, Job, Event
 
 from RayPrioScheduler import RayAppPrioScheduler
 from RayMCScheduler import RayAppMCScheduler

@@ -15,7 +15,7 @@ import os
 
 from ray.util.queue import Queue
 
-from base.common import Event
+from common import Event
 
 
 class App(object):

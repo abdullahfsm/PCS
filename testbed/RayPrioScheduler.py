@@ -7,8 +7,8 @@ import numpy as np
 from functools import partial
 import copy
 
-from base.PriorityScheduler import AppPrioScheduler
-from base.common import Event, App, Job
+from PriorityScheduler import AppPrioScheduler
+from common import Event, App, Job
 
 class RayAppPrioScheduler(RayAppGenericScheduler):
 

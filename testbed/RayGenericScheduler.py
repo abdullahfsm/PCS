@@ -2,8 +2,8 @@ import ray
 from ray.util.queue import Queue
 import os, sys
 
-from base.common import Event, App, Job
-from base.GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
 
 
 from datetime import datetime, timedelta

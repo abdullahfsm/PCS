@@ -9,8 +9,8 @@ import copy
 from fractions import Fraction as frac
 
 
-from base.common import Event, App, Job
-from base.FairScheduler import AppFairScheduler
+from common import Event, App, Job
+from FairScheduler import AppFairScheduler
 
 
 class RayAppFairScheduler(RayAppGenericScheduler):

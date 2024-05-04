@@ -8,8 +8,8 @@ from functools import partial
 import copy
 
 
-from base.AFSScheduler import AppAFSScheduler
-from base.common import Event, App, Job
+from AFSScheduler import AppAFSScheduler
+from common import Event, App, Job
 
 
 class RayAppAFSScheduler(RayAppGenericScheduler):

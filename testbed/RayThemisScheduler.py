@@ -7,8 +7,8 @@ import numpy as np
 from functools import partial
 import copy
 
-from base.ThemisScheduler import AppThemisScheduler
-from base.common import Event, App, Job
+from ThemisScheduler import AppThemisScheduler
+from common import Event, App, Job
 
 class RayAppThemisScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""

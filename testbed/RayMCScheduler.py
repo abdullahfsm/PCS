@@ -9,8 +9,8 @@ import copy
 from fractions import Fraction as frac
 
 
-from base.MCSScheduler import AppPracticalMCScheduler
-from base.common import Event, App, Job
+from MCSScheduler import AppPracticalMCScheduler
+from common import Event, App, Job
 
 
 class RayAppMCScheduler(RayAppGenericScheduler):
