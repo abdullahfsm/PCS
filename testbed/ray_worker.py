@@ -5,8 +5,8 @@ import argparse
 
 
 # from ray.tune.schedulers.hyperband import HyperBandScheduler as HB
-from ray.tune.schedulers.sync_successive_halving import SyncSuccessiveHalving as SHA
-from ray.tune.schedulers.trial_scheduler import FIFOScheduler as FIFO
+# from ray.tune.schedulers.sync_successive_halving import SyncSuccessiveHalving as SHA
+# from ray.tune.schedulers.trial_scheduler import FIFOScheduler as FIFO
 from ray.tune.schedulers.pbt import PopulationBasedTraining as PBT
 
 from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
@@ -200,6 +200,9 @@ def train_cifar10(config, checkpoint_dir=None):
 def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
     
+    
+    '''
+
     sched=SHA(time_attr='training_iteration',
             metric='mean_accuracy',
             budget=budget,
@@ -207,8 +210,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
             num_samples=num_samples,
             reduction_factor=reduction_factor,
             temporal_increase=False)
-    
-    '''
+
     pbt_scheduler = PBT(
             time_attr='time_total_s',
             metric='mean_accuracy',
