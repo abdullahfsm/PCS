@@ -5,6 +5,15 @@ import time
 import subprocess
 import fileinput
 
+
+try:
+    import ray
+    ray.init(address="auto")
+except Exception as e:
+    print('Ray not installed')
+
+
+
 user = os.path.expanduser('~')
 user_name = user.split('/')[-1]
 
@@ -40,37 +49,23 @@ def setup_keys():
             print(f"SSH connection to {nodes} failed")
 
 
-def configure_ray(list_of_nodes):
 
-    user = os.path.expanduser('~')
-    git_repo = "job_simulator"
+def configure_ray(exclude_head=False):
+    if exclude_head:
+        list_of_nodes = worker_nodes
 
-    head_node, *worker_nodes = list_of_nodes[:]
+    threads = list()
+    for node in list_of_nodes:
+        
 
-    # clone important stuff at head
-
-
-
-
-    if "job_simulator" not in os.listdir(user):
-    # os.system(f"sudo rm -r {user}/{git_repo}")
-        os.system(f"git clone git@gitlab.cs.tufts.edu:abdullah/{git_repo}.git {user}/{git_repo}")
-
-    def do_in_parallel(nodeIP, user):
-        os.system(f"ssh {nodeIP} sudo rm -r {user}/{git_repo}")        
-        os.system(f"ssh {nodeIP} git clone 10.1.1.2:{user}/{git_repo}")
-
-    threads=list()
-    for nodeIP in worker_nodes:
-        t = Thread(target=do_in_parallel, args=(nodeIP,user,))
+        t = Thread(target=os.system, args=(f"ssh {node} <configure_ray.sh",))
         t.start()
         threads.append(t)
+
 
     for t in threads:
         t.join()
 
-
-    print("configuration done")
 
 
 def rsync_cluster():
@@ -178,7 +173,7 @@ def get_ray_path():
 
 
 def tear_down():
-    import ray
+
 
         
     ray_dir = get_ray_path()
@@ -195,7 +190,7 @@ def tear_down():
 
 
 def launch():
-    import ray
+
         
 
     ray_dir = get_ray_path()
@@ -219,7 +214,6 @@ def launch():
 
     time.sleep(5)
 
-    ray.init(address="%s:%s" % (head_node, head_port), runtime_env={"conda": "osdi24"})
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
@@ -227,27 +221,39 @@ def launch():
     print(ray.available_resources())
 
 
-def ray_smoke_test():
-    import ray
-    ray.init(address="%s:%s" % (head_node, head_port), runtime_env={"conda": "osdi24"})
 
+def ray_smoke_test():
     @ray.remote
     def sleep_on_each_core():
+        import tensorflow as tf
+
         time.sleep(20)
+
+        conda_env_name = os.environ.get('CONDA_DEFAULT_ENV')
+
+        return conda_env_name
+        return tf.__version__
+
+
+
+
 
     cores = int(ray.cluster_resources().get('CPU'))
 
-    cores = 100
+    cores = 2
 
     futures = [sleep_on_each_core.remote() for _ in range(cores)]
 
+    print(len(futures))
+
+
     result = ray.get(futures)
     print(len(result) == cores)
+    print(result)
 
 
 def get_status():
-    import ray
-    ray.init(address="%s:%s" % (head_node, head_port), runtime_env={"conda": "osdi24"})
+
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
