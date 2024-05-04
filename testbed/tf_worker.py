@@ -4,6 +4,7 @@ import os
 import sys
 from filelock import FileLock
 import logging
+import numpy as np
 
 
 def model_generator(config):
