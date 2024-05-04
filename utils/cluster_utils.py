@@ -246,8 +246,8 @@ def ray_smoke_test():
     print(len(result) == cores)
     print(result)
 
-    conda_env_names = [res.get("conda") for res in results.values()]
-    tf_versions = [res.get("tf_version") for res in results.values()]
+    conda_env_names = [res.get("conda") for res in result.values()]
+    tf_versions = [res.get("tf_version") for res in result.values()]
 
     non_none = len(list(filter(lambda c: c != None, conda_env_name)))
 
