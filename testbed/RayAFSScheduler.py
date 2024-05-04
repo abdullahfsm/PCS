@@ -16,7 +16,7 @@ EPS=1e-7
 
 class RayAppAFSScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, prio_func, app_info_fn="results.csv", suppress_print=False, estimate=True):
+    def __init__(self, total_gpus, event_queue, app_list, app_info_fn="results.csv", suppress_print=False, estimate=True):
         super(RayAppAFSScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=suppress_print, estimate=estimate)
     
 
