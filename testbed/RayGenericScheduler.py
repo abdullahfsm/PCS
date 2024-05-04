@@ -20,6 +20,7 @@ class RayAppGenericScheduler(AppGenericScheduler):
         self._inactivity_time=1440
         self._extra_service = 200
         self._maximum_events_to_process = 10
+        self._estimate = estimate
 
     def sim_estimate(self, app):
         raise NotImplementedError
