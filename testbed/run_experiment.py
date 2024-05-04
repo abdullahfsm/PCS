@@ -10,7 +10,7 @@ import pickle
 
 
 # implemented
-from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
+from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TrialScheduler
 
 
 from ray.tune.integration.keras import TuneReportCallback
@@ -221,10 +221,6 @@ def train_cifar10(config, checkpoint_dir=None):
 def tune_cifar10(app, event_queue, inactivity_time):
 
     trial_scheduler=TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
-
-    
-    # sched = FIFO(stop=ray.tune.stopper.MaximumIterationStopper(budget))
-
 
     analysis = tune.run(
         train_cifar10,
