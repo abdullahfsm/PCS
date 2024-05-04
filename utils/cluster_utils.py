@@ -227,6 +227,22 @@ def launch():
     print(ray.available_resources())
 
 
+def ray_smoke_test():
+    import ray
+    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
+
+    @ray.remote
+    def sleep_on_each_core():
+        time.sleep(20)
+
+    cores = int(ray.cluster_resources().get('CPU'))
+
+    futures = [sleep_on_each_core.remote() for _ in range(cores)]
+
+    result = ray.get(futures)
+    print(len(result) == cores)
+
+
 def get_status():
     import ray
     ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
