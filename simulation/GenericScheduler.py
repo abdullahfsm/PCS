@@ -545,7 +545,7 @@ class AppGenericScheduler(object):
 
 
             if not ray.is_initialized():
-                ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+                ray.init(ignore_reinit_error=True, address="auto")
 
 
             self._sim_futures = list()
