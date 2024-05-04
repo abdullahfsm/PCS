@@ -9,11 +9,17 @@ from ray.tune.schedulers.sync_successive_halving import SyncSuccessiveHalving as
 from ray.tune.schedulers.trial_scheduler import FIFOScheduler as FIFO
 from ray.tune.schedulers.pbt import PopulationBasedTraining as PBT
 
+from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
+
 from tensorflow.keras import datasets, layers, models, regularizers, Input
 from ray.tune.integration.keras import TuneReportCallback
 from filelock import FileLock
 import os
 
+
+from ray.util.queue import Queue
+
+from common import Event
 
 def model_generator(config):
     
@@ -218,18 +224,37 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
     
     # sched = FIFO(stop=ray.tune.stopper.MaximumIterationStopper(budget))
 
+    class App(object):
+        """docstring for App"""
+        def __init__(self, app_id, service, demand):
+            super(App, self).__init__()
+            self.app_id = app_id
+            self.service = service
+            self.demand = demand
+            
+
+
+    app = App(0, budget, num_samples)
+
+    trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
 
     analysis = tune.run(
         train_cifar10,
         resources_per_trial={"gpu": 1},
         name="app_0",
+        trial_name_creator=lambda T: "app_%d_%s" % (0, T.trial_id),
         scheduler=sched,
         num_samples=num_samples,
         config={"p1": tune.choice([0,1]),
                 "p2": tune.choice([0,1]),
                 "p3": tune.choice([0,1]),
                 "p4": tune.choice([0,1]),
-                "p5": tune.choice([0,1])})
+                "p5": tune.choice([0,1])},
+        event_queue = Queue(),
+        event_creator=Event,
+        scheduler_trial_runner_queue={"downlink": Queue(), "uplink": Queue()},
+        inactivity_time=1440,
+        )
         # time_budget_s=budget)
 
 
