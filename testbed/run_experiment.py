@@ -257,12 +257,14 @@ def app_generator(app_list, event_queue):
         event_queue.put(event)
 
 
-def gen_workload_from_trace(fname, app_list, event_queue):
+def gen_workload_from_trace(trace_name, app_list, event_queue):
     # app trace should follow app_id,total_stages,submit_time,job_id,num_gpu,_,stage_id,_,duration,deadline format
     # app list is a dictionary mapping from app_id to object App
     
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+    
 
-    with open(fname, 'r') as fp:
+    with open(f"{file_dir}/traces/{trace_name}.csv", 'r') as fp:
         csvReader = csv.reader(fp)
         next(csvReader)
         for row in csvReader:
@@ -307,7 +309,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-trace', help="trace name", type=str, default="toy_workload.csv")
+    parser.add_argument('-trace', help="trace name", type=str, default="toy_trace")
     parser.add_argument('-scheduling_policy', help="Scheduling policy", type=str, default="MCS")
     parser.add_argument('-logging', help="logging verbosity (0-2)", default=1, type=int)
     parser.add_argument('-output_file', default="results.csv", type=str)
