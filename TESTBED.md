@@ -3,11 +3,11 @@
 
 ## Starting a cloudlab experiment
 Assuming that you have a cloudlab profile:
-* Navigate to Create Experiment Profile [https://www.cloudlab.us/manage_profile.php]
+* Navigate to [Create Experiment Profile](https://www.cloudlab.us/manage_profile.php)
 * Upload the provided cloudlab profile (cloudlab_profile.py)
-* Once the experiment profile has been set up, navigate to Start Experiment [https://www.cloudlab.us/instantiate.php] and choose the profile just created
+* Once the experiment profile has been set up, navigate to [Start Experiment](https://www.cloudlab.us/instantiate.php) and choose the profile just created
 * Starting the experiment may take some time
-* Once the experiment is up and running you can ssh into the head node (n0)
+* Once the experiment is up and running you should be able to ssh into the head node (n0)
 
 
 ## Setting up cluster
