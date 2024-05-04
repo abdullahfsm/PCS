@@ -54,6 +54,8 @@ def configure_ray(exclude_head=False):
     # if exclude_head:
     #     list_of_nodes = worker_nodes
 
+    print(list_of_nodes)
+
     threads = list()
     for node in list_of_nodes:
         
