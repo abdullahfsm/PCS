@@ -343,6 +343,8 @@ if __name__ == '__main__':
         print(class_detail["num_classes"])
         print(class_detail["class_thresholds"])
         print(class_detail["class_rates"])
+        print(class_detail["clip_demand_factor"])
+        print(class_detail["delta"])
 
 
         scheduler = RayAppMCScheduler(total_gpus=total_gpus,

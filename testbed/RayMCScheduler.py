@@ -15,7 +15,7 @@ from base.common import Event, App, Job
 
 class RayAppMCScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, class_detail, quantum=100, app_info_fn="results.csv", suppress_print=False, estimate=False):
+    def __init__(self, total_gpus, event_queue, app_list, class_detail, quantum=100, app_info_fn="results.csv", suppress_print=False, estimate=True):
         super(RayAppMCScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=suppress_print, estimate=estimate)
     
 
