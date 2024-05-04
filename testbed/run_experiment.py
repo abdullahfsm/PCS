@@ -2,9 +2,6 @@ import ray
 from ray import tune
 import os, sys, csv
 
-sys.path.append(f"{os.path.expanduser('~')}/automl-setup/schedulers")
-
-
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
@@ -12,15 +9,11 @@ import matplotlib.pyplot as plt
 import pickle
 
 
-
-
 # implemented
-from tune_modules import TimedFIFOScheduler as TrialScheduler
+from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
 
 
 from ray.tune.integration.keras import TuneReportCallback
-
-
 
 from tensorflow.keras import datasets, layers, models, regularizers, Input
 
@@ -33,8 +26,8 @@ from time import sleep
 import logging
 
 
-from schedulers.common import App, Job, Event
-from schedulers.helpers import gen_data_from_cdf
+from base.common import App, Job, Event
+
 from RayPrioScheduler import RayAppPrioScheduler
 from RayMCScheduler import RayAppMCScheduler
 from RayFairScheduler import RayAppFairScheduler
@@ -227,30 +220,6 @@ def train_cifar10(config, checkpoint_dir=None):
 @ray.remote
 def tune_cifar10(app, event_queue, inactivity_time):
 
-
-    '''
-    sched=SHA(time_attr='time_total_s',
-            metric='mean_accuracy',
-            budget=app.budget,
-            mode="max",
-            num_samples=app.num_samples,
-            reduction_factor=app.reduction_factor,
-            temporal_increase=False)
-    '''
-
-    # sched=TimedFIFO(time_attr='time_total_s',budget=max(10, (app.budget/app.num_samples)))
-
-
-
-
-
-
-    # time_attr: str = "training_iteration",
-    # budget: float = 100.0,
-    # num_samples = 2,
-    # reduction_factor=2):
-
-    # trial_scheduler=SHA(time_attr='time_total_s',budget=(app.service),num_samples=app.demand)
     trial_scheduler=TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
 
     
@@ -320,14 +289,6 @@ def gen_workload_from_trace(fname, app_list, event_queue):
                 jobs[job_id].thrpt_dic = [0,1.0]
 
 
-            '''
-            job_id = 0
-            jobs[job_id] = Job(app_id=app_id, job_id=job_id, service=service,
-                                demand=num_jobs,
-                                min_demand=np.random.choice(min_gpus_per_job))
-            '''
-
-
             app = App(app_id=app_id, jobs=jobs, deadline=None)
             app.exec_func = tune_cifar10
             app.sleep_time = sleep_time
@@ -339,65 +300,6 @@ def gen_workload_from_trace(fname, app_list, event_queue):
 
 
     app_generator.remote(app_list, event_queue)
-
-
-def gen_workload(cdf_app_service_times, cdf_num_jobs_per_app, cdf_max_gpus_per_job, cdf_min_gpus_per_job, load, num_gpus, num_apps, seed, app_list, event_queue):
-
-
-    np.random.seed(seed)
-
-
-    file_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-
-    app_service_times = gen_data_from_cdf(f"{file_dir}/schedulers/cdfs/cdf-app-service-times-{cdf_app_service_times}.csv",
-                                        num_points=num_apps, dtype=int, interpolation=True)
-    num_jobs_per_app = gen_data_from_cdf(f"{file_dir}/schedulers/cdfs/cdf-num-jobs-per-app-{cdf_num_jobs_per_app}.csv",
-                                        num_points=num_apps, dtype=int, interpolation=True)
-    max_gpus_per_job = gen_data_from_cdf(f"{file_dir}/schedulers/cdfs/cdf-max-gpus-per-job-{cdf_max_gpus_per_job}.csv",
-                                        num_points=100, dtype=int, interpolation=True)
-    min_gpus_per_job = gen_data_from_cdf(f"{file_dir}/schedulers/cdfs/cdf-min-gpus-per-job-{cdf_min_gpus_per_job}.csv",
-                                        num_points=100, dtype=int, interpolation=True)
-    
-    avg_interarrival_time = (np.mean(app_service_times))/((load)*num_gpus)
-    sleep_times = [0.0] + list(map(lambda s: int(max(1,s)), np.random.exponential(avg_interarrival_time, num_apps-1)))
-    
-
-    submit_time = 0
-
-    with open(f"{file_dir}/workload.csv",'w') as fp:
-        fp.write("app_id,submit_time,service,num_jobs,sleep_time\n")
-        
-        for app_id in range(num_apps):
-
-            num_jobs = num_jobs_per_app[app_id]
-            service = max(int(float(app_service_times[app_id])/num_jobs), 30) * num_jobs
-
-            jobs = {}
-
-            for job_id in range(num_jobs):
-                jobs[job_id] = Job(app_id=app_id, job_id=job_id, service = (service/num_jobs),
-                                    demand=np.random.choice(max_gpus_per_job),
-                                    min_demand=np.random.choice(min_gpus_per_job))
-
-        
-            app = App(app_id=app_id, jobs=jobs, deadline=None)
-            app.exec_func = tune_cifar10            
-            app.sleep_time = sleep_times[app_id]
-            app_list[app.app_id] = app
-
-
-            submit_time += app.sleep_time
-            fp.write(f"{app.app_id},{submit_time},{app.remaining_service},{len(app.jobs)},{app.sleep_time}\n")
-
-
-            print("\r%d Apps generated" % (app_id+1),end='')
-
-    print("")
-
-    app_generator.remote(app_list, event_queue)
-
     
 if __name__ == '__main__':
 
@@ -405,30 +307,17 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-head_ip', help="IP address of head ray node", type=str, default="10.1.1.2")
-    parser.add_argument('-head_port', help="port# of head ray node", type=str, default="6379")
-    parser.add_argument('-from_trace', help="1/0 to generate workload using trace", type=int, default=0)
-    parser.add_argument('-cdf_app_service_times', help = "fname of app service times", type=str, default="small")
-    parser.add_argument('-cdf_num_jobs_per_app', help = "fname of num jobs per app", type=str, default="small")
-    parser.add_argument('-cdf_max_gpus_per_job', help = "fname of max gpus per job", type=str, default="1GPU")
-    parser.add_argument('-cdf_min_gpus_per_job', help = "fname of min gpus per job", type=str, default="0GPU")
-    parser.add_argument('-num_apps', help="number of apps to generate", type=int, default=1)
-
-    parser.add_argument('-load', help = "load", type=float, default=0.8)
-
-
+    parser.add_argument('-trace', help="trace name", type=str, default="toy_workload.csv")
     parser.add_argument('-scheduling_policy', help="Scheduling policy", type=str, default="MCS")
     parser.add_argument('-logging', help="logging verbosity (0-2)", default=1, type=int)
-    parser.add_argument('-estimation_policy', help='estimation_policy', default='MAX', type=str)
     parser.add_argument('-output_file', default="results.csv", type=str)
     parser.add_argument('-seed', type=int, default=4567)
-
     parser.add_argument('-MCS_config_file', default=None, type=str)
 
     args = parser.parse_args()
 
 
-    ray.init(address=f"{args.head_ip}:{args.head_port}", _redis_password="tf_cluster_123")
+    ray.init(address="auto")
     total_gpus = ray.cluster_resources()["GPU"]
     scheduling_policy = args.scheduling_policy
     output_file = args.output_file
@@ -437,7 +326,6 @@ if __name__ == '__main__':
 
     app_list = {}
     event_queue = Queue()
-
 
 
     if scheduling_policy == "MCS":
@@ -520,19 +408,8 @@ if __name__ == '__main__':
 
 
 
-    if args.from_trace:
-        gen_workload_from_trace("workload.csv", app_list, event_queue)
-    else:
-        gen_workload(args.cdf_app_service_times,
-                    args.cdf_num_jobs_per_app,
-                    args.cdf_max_gpus_per_job,
-                    args.cdf_min_gpus_per_job,
-                    args.load,
-                    total_gpus,
-                    args.num_apps,
-                    args.seed,
-                    app_list,
-                    event_queue)
+
+    gen_workload_from_trace(args.trace, app_list, event_queue)
 
 
     print("Starting experiment with %d Apps" % len(app_list))

@@ -1,8 +1,11 @@
 import ray
 from ray.util.queue import Queue
 import os, sys
-from schedulers.common import Event, App, Job
-from schedulers.GenericScheduler import AppGenericScheduler
+
+from base.common import Event, App, Job
+from base.GenericScheduler import AppGenericScheduler
+
+
 from datetime import datetime, timedelta
 from time import sleep
 import numpy as np

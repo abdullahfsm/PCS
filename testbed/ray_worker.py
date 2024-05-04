@@ -4,10 +4,6 @@ import numpy as np
 import argparse
 
 
-# from ray.tune.schedulers.hyperband import HyperBandScheduler as HB
-# from ray.tune.schedulers.sync_successive_halving import SyncSuccessiveHalving as SHA
-# from ray.tune.schedulers.trial_scheduler import FIFOScheduler as FIFO
-from ray.tune.schedulers.pbt import PopulationBasedTraining as PBT
 
 from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
 
@@ -19,7 +15,17 @@ import os
 
 from ray.util.queue import Queue
 
-from common import Event
+from base.common import Event
+
+
+class App(object):
+    """docstring for App"""
+    def __init__(self, app_id, service, demand):
+        super(App, self).__init__()
+        self.app_id = app_id
+        self.service = service
+        self.demand = demand
+
 
 def model_generator(config):
     
@@ -199,43 +205,6 @@ def train_cifar10(config, checkpoint_dir=None):
 
 def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
-    
-    
-    '''
-
-    sched=SHA(time_attr='training_iteration',
-            metric='mean_accuracy',
-            budget=budget,
-            mode="max",
-            num_samples=num_samples,
-            reduction_factor=reduction_factor,
-            temporal_increase=False)
-
-    pbt_scheduler = PBT(
-            time_attr='time_total_s',
-            metric='mean_accuracy',
-            mode='max',
-            perturbation_interval=budget/2.0,
-            hyperparam_mutations={
-                "p1": [0,1],
-                "p2": [0,1],
-                "p3": [0,1],
-                "p4": [0,1],
-                "p5": [0,1]})
-    '''
-    
-    # sched = FIFO(stop=ray.tune.stopper.MaximumIterationStopper(budget))
-
-    class App(object):
-        """docstring for App"""
-        def __init__(self, app_id, service, demand):
-            super(App, self).__init__()
-            self.app_id = app_id
-            self.service = service
-            self.demand = demand
-            
-
-
     app = App(0, budget, num_samples)
 
     trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
@@ -275,7 +244,5 @@ if __name__ == '__main__':
     parser.add_argument("--budget", type=float, default=5.0)
     args = parser.parse_args()
 
-    # ray.init(address="auto", runtime_env={""})
-    # ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
     ray.init(address="auto")
     tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget)

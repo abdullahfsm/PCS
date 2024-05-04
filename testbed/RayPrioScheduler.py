@@ -1,13 +1,13 @@
 import ray
 from RayGenericScheduler import RayAppGenericScheduler
 import os, sys
-from schedulers.common import Event, App, Job
+from base.common import Event, App, Job
 from datetime import datetime, timedelta
 from time import sleep
 import numpy as np
 from functools import partial
 import copy
-from schedulers.PriorityScheduler import AppPrioScheduler
+from base.PriorityScheduler import AppPrioScheduler
 
 class RayAppPrioScheduler(RayAppGenericScheduler):
 
