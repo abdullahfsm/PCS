@@ -229,12 +229,11 @@ def ray_smoke_test():
     def sleep_on_each_core():
         import tensorflow as tf
 
-        time.sleep(20)
+        time.sleep(5)
 
         conda_env_name = os.environ.get('CONDA_DEFAULT_ENV')
 
-        return conda_env_name
-        return tf.__version__
+        return {"conda": conda_env_name, "tf_version": tf.__version__}
 
     cores = int(ray.cluster_resources().get('CPU'))
 
@@ -246,6 +245,15 @@ def ray_smoke_test():
     result = ray.get(futures)
     print(len(result) == cores)
     print(result)
+
+    conda_env_names = [res.get("conda") for res in results.values()]
+    tf_versions = [res.get("tf_version") for res in results.values()]
+
+    non_none = len(list(filter(lambda c: c != None, conda_env_name)))
+
+    print(f"{non_none}/{cores} non none condas")
+
+
 
 
 def get_status():
