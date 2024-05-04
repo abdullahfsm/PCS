@@ -274,7 +274,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ray.init(address="auto", runtime_env={""})
-    ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
-
-
+    # ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+    ray.init(address="auto")
     tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget)
