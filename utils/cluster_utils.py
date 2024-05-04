@@ -219,7 +219,7 @@ def launch():
 
     time.sleep(5)
 
-    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123")
+    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
@@ -229,7 +229,7 @@ def launch():
 
 def get_status():
     import ray
-    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", conda="osdi24")
+    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
