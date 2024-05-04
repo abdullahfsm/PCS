@@ -245,7 +245,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
         resources_per_trial={"gpu": 1},
         name="app_0",
         trial_name_creator=lambda T: "app_%d_%s" % (0, T.trial_id),
-        scheduler=sched,
+        scheduler=trial_scheduler,
         num_samples=num_samples,
         config={"p1": tune.choice([0,1]),
                 "p2": tune.choice([0,1]),
