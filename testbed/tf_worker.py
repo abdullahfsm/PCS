@@ -164,11 +164,11 @@ x_test, y_test = x_test, y_test
 ###################################################################
 
 
-config={"p1": tune.choice([0]),
-        "p2": tune.choice([0]),
-        "p3": tune.choice([0]),
-        "p4": tune.choice([0]),
-        "p5": tune.choice([0])}
+config={"p1": 0,
+        "p2": 0,
+        "p3": 0,
+        "p4": 0,
+        "p5": 0}
 
 model = model_generator(config)
 
