@@ -194,8 +194,6 @@ def tear_down():
 
 
 
-/users/abdffsm/miniconda/envs/osdi24/bin/ray
-/users/abdffsm/miniconda3/envs/osdi24/bin/ray
 def launch():
     import ray
         
