@@ -173,6 +173,9 @@ config={"p1": 0,
 model = model_generator(config)
 
 
+
+print("model generated")
+
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 loss = tf.keras.losses.CategoricalCrossentropy()
 
@@ -181,10 +184,12 @@ model.compile(loss=loss,
             optimizer=optimizer,
             metrics=['accuracy'])
 
-model.fit(x_train, y_train,
-        batch_size=batch_size,
-        epochs=epochs,
-        verbose=0,
-        validation_data=(x_validation, y_validation),
-        # callbacks=[TuneReportCallback({"mean_accuracy": "accuracy"})],
-        )
+print("model compiled")
+
+# model.fit(x_train, y_train,
+#         batch_size=batch_size,
+#         epochs=epochs,
+#         verbose=0,
+#         validation_data=(x_validation, y_validation),
+#         # callbacks=[TuneReportCallback({"mean_accuracy": "accuracy"})],
+#         )
