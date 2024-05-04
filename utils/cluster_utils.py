@@ -193,6 +193,9 @@ def tear_down():
         os.system(f"ssh {node} {ray_dir} stop")
 
 
+
+/users/abdffsm/miniconda/envs/osdi24/bin/ray
+/users/abdffsm/miniconda3/envs/osdi24/bin/ray
 def launch():
     import ray
         
@@ -228,7 +231,7 @@ def launch():
 
 def get_status():
     import ray
-    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123")
+    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", conda="osdi24")
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
