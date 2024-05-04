@@ -516,6 +516,28 @@ class AppPracticalMCScheduler(AppGenericScheduler):
                     ),
                 )
 
+
+
+
+    def __pick_min_event(self):
+
+
+        if len(self._event_queue) == 0:
+            return self._closest_end_event
+        elif not self._closest_end_event:
+            return self._event_queue.pop()
+
+        new_event = self._event_queue.pop()
+
+        if new_event < self._closest_end_event:
+            return new_event
+
+        self._event_queue.append(new_event)
+        return self._closest_end_event
+
+
+
+
     def run(self, cond=lambda: False):
 
 
