@@ -15,6 +15,7 @@ N = int(N.rstrip())
 list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
 
 head_node, *worker_nodes = list_of_nodes[:]
+head_port = 6379
 
 
 def setup_keys():
@@ -180,8 +181,6 @@ def tear_down():
     import ray
 
         
-
-    head_port = 6379
     ray_dir = get_ray_path()
 
 
@@ -198,7 +197,6 @@ def launch():
     import ray
         
 
-    head_port = 6379
     ray_dir = get_ray_path()
 
 
@@ -226,6 +224,17 @@ def launch():
     print("Num of nodes: %d" % len(ray_nodes))
     print(ray.cluster_resources())
     print(ray.available_resources())
+
+
+def get_status():
+    import ray
+    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123")
+
+    ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
+    print("Num of nodes: %d" % len(ray_nodes))
+    print(ray.cluster_resources())
+    print(ray.available_resources())
+
 
 
 
