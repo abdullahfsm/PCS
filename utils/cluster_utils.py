@@ -210,16 +210,16 @@ def launch():
         os.system(f"ssh {node} {ray_dir} stop")
 
     # starting on head node
-    os.system(f"{ray_dir} start --head --node-ip-address={head_node} --port={head_port} --redis-password=tf_cluster_123")
+    os.system(f"{ray_dir} start --head --node-ip-address={head_node} --port={head_port}")
 
 
     for node in worker_nodes:
         time.sleep(1)
-        os.system(f"ssh {node} {ray_dir} start --address={head_node}:{head_port} --redis-password=tf_cluster_123")
+        os.system(f"ssh {node} {ray_dir} start --address={head_node}:{head_port}")
 
     time.sleep(5)
 
-    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
+    ray.init(address="%s:%s" % (head_node, head_port), runtime_env={"conda": "osdi24"})
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
@@ -229,13 +229,15 @@ def launch():
 
 def ray_smoke_test():
     import ray
-    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
+    ray.init(address="%s:%s" % (head_node, head_port), runtime_env={"conda": "osdi24"})
 
     @ray.remote
     def sleep_on_each_core():
         time.sleep(20)
 
     cores = int(ray.cluster_resources().get('CPU'))
+
+    cores = 100
 
     futures = [sleep_on_each_core.remote() for _ in range(cores)]
 
@@ -245,7 +247,7 @@ def ray_smoke_test():
 
 def get_status():
     import ray
-    ray.init(address="%s:%s" % (head_node, head_port), _redis_password="tf_cluster_123", runtime_env={"conda": "osdi24"})
+    ray.init(address="%s:%s" % (head_node, head_port), runtime_env={"conda": "osdi24"})
 
     ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
     print("Num of nodes: %d" % len(ray_nodes))
