@@ -248,8 +248,8 @@ if __name__ == '__main__':
     parser.add_argument("--budget", type=float, default=5.0)
     args = parser.parse_args()
 
-
-    ray.init(address="10.1.1.2:6379", _redis_password="tf_cluster_123")
+    # ray.init(address="auto", runtime_env={""})
+    ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
 
 
     tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget)
