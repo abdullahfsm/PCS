@@ -115,8 +115,10 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
 
         if thrpt > 0:
             
-            # changed here
-            return app.estimated_remaining_service/thrpt
+            return app.remaining_service/thrpt
+        else:
+            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
+
         return float('inf')
 
     def compute_allocation(self, event_time):
