@@ -529,10 +529,11 @@ class AppPracticalMCScheduler(AppGenericScheduler):
             self._sim_futures = list()
 
 
-        while len(self._event_queue) > 0 or len(self._end_event_queue) > 0:
+        while len(self._event_queue) > 0 or self._closest_end_event:
             event = heappop(
                 self.__pick_min_heap(
-                    self.__pick_min_heap(self._event_queue, self._end_event_queue),
+                    
+                    [self.__pick_min_event()],
                     self._redivision_event_queue,
                 )
             )
