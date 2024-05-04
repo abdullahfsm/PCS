@@ -13,8 +13,8 @@ from base.common import Event, App, Job
 class RayAppPrioScheduler(RayAppGenericScheduler):
 
     """docstring for AppPrioScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, prio_func, app_info_fn="results.csv", suppress_print=False):
-        super(RayAppPrioScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=False)
+    def __init__(self, total_gpus, event_queue, app_list, prio_func, app_info_fn="results.csv", suppress_print=False, estimate=True):
+        super(RayAppPrioScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=False, estimate=estimate)
         self._prio_func = prio_func
         
 
