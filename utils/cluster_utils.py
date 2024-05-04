@@ -236,6 +236,8 @@ if __name__ == '__main__':
     else:
 
         try:
-            globals()[sys.argv[1]]()
+            val = globals()[sys.argv[1]]()
+            if val:
+                print(val)
         except Exception as e:
             raise e
