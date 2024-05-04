@@ -290,13 +290,20 @@ class AppPracticalMCScheduler(AppGenericScheduler):
         event_queue,
         app_list,
         class_detail,
-        quantum,
+        quantum=100,
         app_info_fn="results.csv",
         suppress_print=False,
-        estimate=False,
+        verbosity=1,
+        p_error=None,
     ):
         super(AppPracticalMCScheduler, self).__init__(
-            total_gpus, event_queue, app_list, app_info_fn, suppress_print, estimate
+            total_gpus,
+            event_queue,
+            app_list,
+            app_info_fn,
+            suppress_print,
+            verbosity=verbosity,
+            p_error=p_error,
         )
 
         self._class_detail = copy.deepcopy(class_detail)
@@ -510,10 +517,17 @@ class AppPracticalMCScheduler(AppGenericScheduler):
                 )
 
     def run(self, cond=lambda: False):
-        if self._estimate:
-            futures = list()
+
+
+
+        if self._estimator:
+            p_of_estimate = min(5000.0/len(self._app_list), 1.0)
+
             if not ray.is_initialized():
-                ray.init(ignore_reinit_error=True)
+                ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+
+            self._sim_futures = list()
+
 
         while len(self._event_queue) > 0 or len(self._end_event_queue) > 0:
             event = heappop(
@@ -575,35 +589,41 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
             self.update_end_events(event.event_time)
 
-            if (
-                event.event_type == Event.APP_SUB
-                and self._estimate
-                and np.random.uniform() < 1.2
-            ):
-                futures.append(
-                    self.sim_estimate(
-                        app=self._app_list[event.app_id], event_time=event.event_time
-                    )
-                )
+
+
+            if event.event_type == Event.APP_SUB and self._estimator and random.uniform(0,1) < p_of_estimate:
+
+
+                ret = self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time)
+                if ret:
+                    self._sim_futures.append(ret)
 
             if cond():
                 break
 
+
+
         # ray changes here
-        if self._estimate:
+        if self._estimator:
+
+            if len(self._snap_shots) > 0:
+                self._sim_futures.append(multi_runner.remote(self._snap_shots))
+
+            batched_futures = ray.get(self._sim_futures)
+            futures = []
+            for b in batched_futures:
+                futures += b
+
             total_tasks = len(futures)
             finished_futures = list()
-
+            
             while futures:
                 finished, futures = ray.wait(futures)
                 finished_futures += finished
-
-            for future in finished_futures:
+            
+            for future in finished_futures:            
                 app_id, estimated_start_time, estimated_end_time = ray.get(future)
-                self._app_list[app_id].update_estimates(
-                    estimated_start_time, estimated_end_time
-                )
-                self.log_app_info(self._app_list[app_id])
-
+                self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
                 if self._verbosity == 4:
-                    print(f"num ray finished: {total_tasks-len(futures)}", end="\r")
+                    print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
+        self.log_apps()
