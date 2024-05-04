@@ -6,11 +6,19 @@ import subprocess
 import fileinput
 
 
+RAY_INSTALLED = False
 try:
     import ray
-    ray.init(address="auto")
+    RAY_INSTALLED = True
 except Exception as e:
     print('Ray not installed')
+
+
+if RAY_INSTALLED:
+    try:
+        ray.init(address="auto")
+    except Exception as e:
+        raise e
 
 
 
@@ -217,10 +225,10 @@ def launch():
     time.sleep(5)
 
 
-    ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
-    print("Num of nodes: %d" % len(ray_nodes))
-    print(ray.cluster_resources())
-    print(ray.available_resources())
+    # ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
+    # print("Num of nodes: %d" % len(ray_nodes))
+    # print(ray.cluster_resources())
+    # print(ray.available_resources())
 
 
 
