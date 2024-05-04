@@ -5,10 +5,10 @@ import sys
 import numpy as np
 import pickle
 
-from ray.tune import trial_runner
-from ray.tune.result import DEFAULT_METRIC
 from ray.tune.schedulers.trial_scheduler import FIFOScheduler
-from ray.tune.trial import Trial
+from ray.tune.experiment import Trial
+from ray.tune.execution.tune_controller import TuneController
+
 
 from datetime import datetime, timedelta
 
@@ -31,41 +31,36 @@ class TimedFIFOScheduler(FIFOScheduler):
         self._trial_id_to_budget = {}
 
 
-    def on_trial_pause(self, trial_runner: "trial_runner.TrialRunner",
-                          trial: Trial):
+    def on_trial_pause(self, tune_controller: "TuneController", trial: Trial):
 
         self._trial_id_to_last_event_time[trial.trial_id] = None
 
 
 
-    def on_trial_unpause(self, trial_runner: "trial_runner.TrialRunner",
-                          trial: Trial):
+    def on_trial_unpause(self, tune_controller: "TuneController", trial: Trial):
 
         self._trial_id_to_last_event_time[trial.trial_id] = datetime.now()
 
 
-    def on_trial_add(self, trial_runner: "trial_runner.TrialRunner",
-                     trial: Trial):
+    def on_trial_add(self, tune_controller: "TuneController", trial: Trial):
         self._trial_id_to_time_elapsed[trial.trial_id] = 0
         self._trial_id_to_last_event_time[trial.trial_id] = datetime.now()
         self._trial_id_to_budget[trial.trial_id] = self._budget
 
 
-    def on_trial_result(self, trial_runner: "trial_runner.TrialRunner",
-                        trial: Trial, result: Dict) -> str:
-
-        
+    def on_trial_result(
+        self, tune_controller: "TuneController", trial: Trial, result: Dict
+    ) -> str:
+    
         if self._trial_id_to_last_event_time[trial.trial_id] != None:
             now_time = datetime.now()
             self._trial_id_to_time_elapsed[trial.trial_id] += (now_time - self._trial_id_to_last_event_time[trial.trial_id]).total_seconds()
             self._trial_id_to_last_event_time[trial.trial_id] = now_time
 
         if self._trial_id_to_time_elapsed[trial.trial_id] <= self._budget:
-            action = FIFOScheduler.CONTINUE
+            return FIFOScheduler.CONTINUE
         else:
-            action = FIFOScheduler.STOP
-
-        return action
+            return FIFOScheduler.STOP
 
     def debug_string(self) -> str:
         return "Using TimedFIFO scheduling algorithm."
