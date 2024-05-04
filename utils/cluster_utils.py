@@ -228,13 +228,18 @@ def ray_smoke_test():
     @ray.remote
     def sleep_on_each_core():
         import tensorflow as tf
+        import socket
 
         time.sleep(5)
 
         conda_env_name = os.environ.get('CONDA_DEFAULT_ENV')
 
 
-        return {"conda": conda_env_name, "tf_version": tf.__version__, "ray_version": ray.__version__}
+
+        return {"conda": conda_env_name,
+                "tf_version": tf.__version__,
+                "ray_version": ray.__version__,
+                "socket": socket.gethostname()}
 
     cores = int(ray.cluster_resources().get('CPU'))
 
