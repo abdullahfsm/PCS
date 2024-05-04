@@ -280,4 +280,5 @@ if __name__ == '__main__':
             if val:
                 print(val)
         except Exception as e:
+            print("Error running command")
             raise e
