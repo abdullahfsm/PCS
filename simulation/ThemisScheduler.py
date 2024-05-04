@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 import math
 
 
-from .common import Event, App, Job
-from .GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
 
 
 class AppThemisScheduler(AppGenericScheduler):

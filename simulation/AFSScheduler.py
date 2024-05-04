@@ -7,8 +7,8 @@ import math
 
 import warnings
 
-from .GenericScheduler import AppGenericScheduler
-from .common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
 
 
 EPS=1e-7

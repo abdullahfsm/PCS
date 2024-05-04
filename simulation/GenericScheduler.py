@@ -9,7 +9,7 @@ import ray
 import math
 from time import sleep
 
-from .common import Event, App, Job
+from common import Event, App, Job
 
 
 @ray.remote

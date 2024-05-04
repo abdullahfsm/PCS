@@ -8,8 +8,8 @@ import ray
 import math
 
 
-from .common import Event, App, Job
-from .GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
 
 # self, total_gpus, event_queue, app_list, suppress_print=False
 

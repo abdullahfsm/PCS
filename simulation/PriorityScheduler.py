@@ -5,8 +5,8 @@ import numpy as np
 import math
 from datetime import datetime
 
-from .common import Event, App, Job
-from .GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
 
 class AppPrioScheduler(AppGenericScheduler):
     """docstring for AppPrioScheduler"""

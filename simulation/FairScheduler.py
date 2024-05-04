@@ -8,8 +8,8 @@ from fractions import Fraction as frac
 import math
 
 
-from .common import Event, App, Job
-from .GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
 
 
 class AppFairScheduler(AppGenericScheduler):
