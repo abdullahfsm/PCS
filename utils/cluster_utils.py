@@ -154,6 +154,35 @@ def install():
 
 
 
+def tear_down():
+    import ray
+
+    def get_ray_path():
+        # Run the command and capture its output
+        result = subprocess.run(['which', 'ray'], capture_output=True, text=True)
+
+        # Check if the command was successful
+        if result.returncode == 0:
+            # Save the output to a variable
+            output = result.stdout.strip()
+            return output
+        else:
+            return None
+        
+
+    head_port = 6379
+    ray_dir = get_ray_path()
+
+
+    if not ray_dir:
+        print("Ray not found")
+        return
+
+    # stopping all previous instances
+    for node in list_of_nodes:
+        os.system(f"ssh {node} {ray_dir} stop")
+
+
 def launch():
     import ray
 
