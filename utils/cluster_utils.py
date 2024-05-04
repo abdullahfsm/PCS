@@ -18,7 +18,7 @@ if RAY_INSTALLED:
     try:
         ray.init(address="auto")
     except Exception as e:
-        raise e
+        print("No existing ray cluster found. run `lunch`")
 
 
 
