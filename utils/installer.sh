@@ -13,6 +13,7 @@ sudo apt-get -y install cuda
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
 eval "$(/$HOME/miniconda/bin/conda shell.bash hook)"
+conda init
 conda create -y -n osdi24 python=3.6.10
 echo "conda activate osdi24" >> ~/.bashrc
 

@@ -19,8 +19,14 @@ head_node, *worker_nodes = list_of_nodes[:]
 
 def setup_keys():
     def check_ssh(ip):
-        result = subprocess.run(['ssh', '-o', 'BatchMode=yes', ip, 'exit'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return result.returncode == 0
+
+
+        command = f"ssh -o BatchMode=yes {ip} exist"
+
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = process.communicate()
+
+        return process.returncode == 0
 
 
     os.system(f'bash setup_keys.sh {N} {user_name}')
@@ -107,9 +113,12 @@ def cluster_reboot():
 def increase_file_limit():
     def check_ulimit(ip, limit):
         command = f"ssh {ip} 'ulimit -n'"
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        return result.returncode == 0 and result.stdout.strip() == limit
 
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = process.communicate()
+
+
+        return process.returncode == 0 and stdout.strip() == limit
 
     limit = 100000
 
@@ -154,20 +163,22 @@ def install():
 
 
 
+def get_ray_path():
+    # Run the command and capture its output
+
+    command = f"which ray"
+
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    stdout, stderr = process.communicate()
+
+    if process.returncode == 0:
+        return stdout.strip()
+    return None
+
+
 def tear_down():
     import ray
 
-    def get_ray_path():
-        # Run the command and capture its output
-        result = subprocess.run(['which', 'ray'], capture_output=True, text=True)
-
-        # Check if the command was successful
-        if result.returncode == 0:
-            # Save the output to a variable
-            output = result.stdout.strip()
-            return output
-        else:
-            return None
         
 
     head_port = 6379
@@ -185,18 +196,6 @@ def tear_down():
 
 def launch():
     import ray
-
-    def get_ray_path():
-        # Run the command and capture its output
-        result = subprocess.run(['which', 'ray'], capture_output=True, text=True)
-
-        # Check if the command was successful
-        if result.returncode == 0:
-            # Save the output to a variable
-            output = result.stdout.strip()
-            return output
-        else:
-            return None
         
 
     head_port = 6379
