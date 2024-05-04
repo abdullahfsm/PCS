@@ -51,8 +51,8 @@ def setup_keys():
 
 
 def configure_ray(exclude_head=False):
-    if exclude_head:
-        list_of_nodes = worker_nodes
+    # if exclude_head:
+    #     list_of_nodes = worker_nodes
 
     threads = list()
     for node in list_of_nodes:
