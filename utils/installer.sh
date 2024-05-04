@@ -8,19 +8,20 @@ sudo cp /var/cuda-repo-ubuntu2204-11-8-local/cuda-*-keyring.gpg /usr/share/keyri
 sudo apt-get update
 sudo apt-get -y install cuda
 
-# get pip
-wget https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py
 
-# install torch
-sudo python3 -m pip install tensorflow
-sudo python3 -m pip install pandas
-sudo python3 -m pip install tabulate
-sudo python3 -m pip install matplotlib
-sudo python3 -m pip install hiredis
-sudo python3 -m pip install ray==2.10.0
-sudo python3 -m pip install fsspec==2024.3.1
-sudo python3 -m pip install pyarrow==16.0.0
+# install conda
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
+eval "$(/$HOME/miniconda/bin/conda shell.bash hook)"
+conda create -y -n osdi24 python=3.6.10
+echo "conda activate osdi24" >> ~/.bashrc
+
+
+# get ray version
+curl -o ray-2.0.0.dev0-cp36-cp36m-manylinux2014_x86_64.whl "https://zenodo.org/records/11111741/files/ray-2.0.0.dev0-cp36-cp36m-manylinux2014_x86_64.whl?download=1"
+
+# installing packages
+python3 -m pip install -r requirements.txt
 
 
 # Driver + cuda toolkit
