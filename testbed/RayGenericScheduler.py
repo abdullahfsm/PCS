@@ -31,8 +31,13 @@ class RayAppGenericScheduler(AppGenericScheduler):
         if app.status == App.SUBMITTED or app.status == App.QUEUED:
 
             app.trial_runner_queue = {"downlink": Queue(), "uplink": Queue()}
+
+
+
             app.future = app.exec_func.remote(app, self._event_queue,
                                 inactivity_time=self._inactivity_time)
+
+            print(f"app_id={app.app_id} successfully started: {app.future}")
 
     def update_allocations(self, event_time):
         super(RayAppGenericScheduler, self).update_allocations(event_time)

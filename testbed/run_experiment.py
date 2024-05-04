@@ -386,7 +386,8 @@ if __name__ == '__main__':
                                     event_queue=event_queue,
                                     app_list=app_list,
                                     prio_func=lambda a: a.submit_time,
-                                    app_info_fn=output_file)
+                                    app_info_fn=output_file,
+                                    estimate=False)
 
     elif scheduling_policy == "FS":
         scheduler = RayAppFairScheduler(total_gpus=total_gpus,
