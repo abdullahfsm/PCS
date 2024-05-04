@@ -187,6 +187,11 @@ class RayAppFairScheduler(RayAppGenericScheduler):
 
     def run(self):
 
+
+        if self._app_info_fn:
+            with open(self._app_info_fn,'w') as fp:
+                fp.write("app_id,submit_time,start_time,end_time,estimated_start_time,estimated_end_time,fair_act,service,num_apps_seen_diff\n")
+
         @ray.remote
         def gen_background_event(event_queue, event, sleep_time):
             sleep(sleep_time)
@@ -195,6 +200,10 @@ class RayAppFairScheduler(RayAppGenericScheduler):
             
 
         last_self_check_time = datetime.now()
+
+
+
+
 
         while self._num_finished_apps < len(self._app_list):
         
@@ -270,6 +279,5 @@ class RayAppFairScheduler(RayAppGenericScheduler):
             self.update_allocations(event.event_time)
 
             self.report_progress()
-            
             
             

@@ -15,8 +15,8 @@ from base.common import Event, App, Job
 
 class RayAppMCScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, class_detail, quantum, app_info_fn="results.csv", suppress_print=False, estimate=False):
-        super(RayAppMCScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=False)
+    def __init__(self, total_gpus, event_queue, app_list, class_detail, quantum=100, app_info_fn="results.csv", suppress_print=False, estimate=False):
+        super(RayAppMCScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=suppress_print, estimate=estimate)
     
 
         self._class_detail = copy.deepcopy(class_detail)
@@ -43,13 +43,6 @@ class RayAppMCScheduler(RayAppGenericScheduler):
     
     def sim_estimate(self, app):
 
-
-        # total_gpus, event_queue, app_list, class_detail, app_info_fn="results.csv", suppress_print=False, estimate=False
-
-
-
-        
-
         snap_shot = AppPracticalMCScheduler(total_gpus=self._max_capacity,
                                     event_queue=[Event(event_id=app.app_id, event_time=datetime.now(), event_type=Event.APP_SUB, app_id=app.app_id)],
                                     app_list={},
@@ -63,21 +56,12 @@ class RayAppMCScheduler(RayAppGenericScheduler):
         snap_shot._app_id_to_allocation = copy.deepcopy(self._app_id_to_allocation)
 
         for virtual_app in snap_shot._active_apps+[copy.deepcopy(app)]:
-            
-
-            for attr in ['future', 'exec_func', 'trial_runner_queue']:
-                if hasattr(virtual_app, attr):
-                    delattr(virtual_app, attr)
-            
             snap_shot._app_list[virtual_app.app_id] = virtual_app
 
 
 
-        snap_shot._estimate = False
         snap_shot._suppress_print = True
         snap_shot._verbosity = 0
-        snap_shot._estimator = True
-
         snap_shot._init_time = self._init_time
         snap_shot._last_event_time = self._last_event_time
 
@@ -253,6 +237,11 @@ class RayAppMCScheduler(RayAppGenericScheduler):
 
     def run(self):
 
+
+        if self._app_info_fn:
+            with open(self._app_info_fn,'w') as fp:
+                fp.write("app_id,submit_time,start_time,end_time,estimated_start_time,estimated_end_time,fair_act,service,num_apps_seen_diff\n")
+
         @ray.remote
         def gen_background_event(event_queue, event, sleep_time):
             sleep(sleep_time)
@@ -299,7 +288,7 @@ class RayAppMCScheduler(RayAppGenericScheduler):
                     self.remove_failed_apps()
                     last_self_check_time = datetime.now()
 
-            self.report_progress()
+
 
             
             if resource_change_event or redivision_event:
@@ -345,3 +334,4 @@ class RayAppMCScheduler(RayAppGenericScheduler):
 
 
             self.update_allocations(event.event_time)
+            self.report_progress()
