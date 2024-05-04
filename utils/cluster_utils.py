@@ -224,14 +224,6 @@ def launch():
 
     time.sleep(5)
 
-
-    # ray_nodes = list(filter(lambda n: n["alive"], ray.nodes()))
-    # print("Num of nodes: %d" % len(ray_nodes))
-    # print(ray.cluster_resources())
-    # print(ray.available_resources())
-
-
-
 def ray_smoke_test():
     @ray.remote
     def sleep_on_each_core():
@@ -244,13 +236,7 @@ def ray_smoke_test():
         return conda_env_name
         return tf.__version__
 
-
-
-
-
     cores = int(ray.cluster_resources().get('CPU'))
-
-    cores = 2
 
     futures = [sleep_on_each_core.remote() for _ in range(cores)]
 
