@@ -234,8 +234,6 @@ def ray_smoke_test():
 
         conda_env_name = os.environ.get('CONDA_DEFAULT_ENV')
 
-
-
         return {"conda": conda_env_name,
                 "tf_version": tf.__version__,
                 "ray_version": ray.__version__,
@@ -246,8 +244,6 @@ def ray_smoke_test():
     futures = [sleep_on_each_core.remote() for _ in range(cores)]
 
     print(len(futures))
-
-
     result = ray.get(futures)
     print(len(result) == cores)
     print(result)
