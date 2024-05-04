@@ -35,21 +35,10 @@ class RayAppPrioScheduler(RayAppGenericScheduler):
         #TODO: populate end_event_list - issue, I don't know job allocation
 
         for virtual_app in snap_shot._active_apps+[copy.deepcopy(app)]:
-            
-
-            for attr in ['future', 'exec_func', 'trial_runner_queue']:
-                if hasattr(virtual_app, attr):
-                    delattr(virtual_app, attr)
-            
             snap_shot._app_list[virtual_app.app_id] = virtual_app
 
-
-
-        snap_shot._estimate = False
         snap_shot._suppress_print = True
         snap_shot._verbosity = 0
-        snap_shot._estimator = True
-
         snap_shot._init_time = self._init_time
         snap_shot._last_event_time = self._last_event_time
 
