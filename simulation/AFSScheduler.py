@@ -144,7 +144,7 @@ class AppAFSScheduler(AppGenericScheduler):
             return app.estimated_remaining_service/thrpt
 
         else:
-            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
+            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service} app_current_allocation: {app_current_allocation}")
 
 
         return float('inf')
