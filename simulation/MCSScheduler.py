@@ -1,13 +1,15 @@
 import sys
 import copy
-from common import Event, App, Job
 import numpy as np
 from heapq import heapify, heappop, heappush
-from GenericScheduler import AppGenericScheduler
 from fractions import Fraction as frac
 from datetime import datetime, timedelta
 import ray
 import math
+
+
+from .common import Event, App, Job
+from .GenericScheduler import AppGenericScheduler
 
 # self, total_gpus, event_queue, app_list, suppress_print=False
 

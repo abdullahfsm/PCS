@@ -1,13 +1,16 @@
 import sys, os
-from helpers import flat_map
+
 import copy, random
-from common import Event, App, Job
 import numpy as np
-from GenericScheduler import AppGenericScheduler
 from datetime import datetime, timedelta
 from heapq import heappush, heappop, heapify
 from fractions import Fraction as frac
 import math
+
+
+from .common import Event, App, Job
+from .GenericScheduler import AppGenericScheduler
+
 
 class AppFairScheduler(AppGenericScheduler):
     """This class implements the Fair Scheduler for Apps"""

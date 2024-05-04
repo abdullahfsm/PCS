@@ -1,12 +1,15 @@
 import sys
-from helpers import flat_map
+
 import copy
-from common import Event, App, Job
 import numpy as np
-from GenericScheduler import AppGenericScheduler
+
 import math
 
 import warnings
+
+from .GenericScheduler import AppGenericScheduler
+from .common import Event, App, Job
+
 
 EPS=1e-7
 

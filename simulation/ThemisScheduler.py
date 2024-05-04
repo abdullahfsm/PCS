@@ -1,12 +1,15 @@
 import sys
 from helpers import flat_map
 import copy
-from common import Event, App, Job
 import numpy as np
-from GenericScheduler import AppGenericScheduler
 from heapq import heapify, heappop, heappush
 from datetime import datetime, timedelta
 import math
+
+
+from .common import Event, App, Job
+from .GenericScheduler import AppGenericScheduler
+
 
 class AppThemisScheduler(AppGenericScheduler):
     """docstring for AppThemisScheduler"""

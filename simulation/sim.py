@@ -6,22 +6,22 @@ import matplotlib.pyplot as plt
 import pickle
 from pprint import pprint
 
-from MCSScheduler import AppMCScheduler, AppPracticalMCScheduler
-from PriorityScheduler import AppPrioScheduler
-from FairScheduler import AppFairScheduler, AppPracticalFairScheduler
-from ThemisScheduler import AppThemisScheduler
-from AFSScheduler import AppAFSScheduler
+from .MCSScheduler import AppMCScheduler, AppPracticalMCScheduler
+from .PriorityScheduler import AppPrioScheduler
+from .FairScheduler import AppFairScheduler, AppPracticalFairScheduler
+from .ThemisScheduler import AppThemisScheduler
+from .AFSScheduler import AppAFSScheduler
 
-from helpers import gen_data_from_cdf
+from .helpers import gen_data_from_cdf
 
-from common import App, Job, Event
+from .common import App, Job, Event
 
 from datetime import datetime, timedelta
 
 from functools import partial
 from fractions import Fraction as frac
 
-from models import Models
+from .models import Models
 
 
 
