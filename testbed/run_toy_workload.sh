@@ -1,15 +1,22 @@
 #!/bin/bash
 
+output_files=()
+
 # PCS configs
-python3 run_experiment.py -scheduling_policy MCS -MCS_config_file PCS_config_toy_pred.pkl -trace toy_workload.csv -output_file PCS_pred_toy_result.csv
-python3 run_experiment.py -scheduling_policy MCS -MCS_config_file PCS_config_toy_bal.pkl -trace toy_workload.csv -output_file PCS_bal_toy_result.csv
-python3 run_experiment.py -scheduling_policy MCS -MCS_config_file PCS_config_toy_jct.pkl -trace toy_workload.csv -output_file PCS_jct_toy_result.csv
+for var in {jct,bal,pred,}
+do
+	python3 run_experiment.py -scheduling_policy MCS -MCS_config_file PCS_config_toy_"$var".pkl -trace toy_workload.csv -output_file PCS_"$var"_toy.csv
+	output_files+=(PCS_"$var"_toy.csv)
+	echo "$var" done
+done
 
-# FIFO
-python3 run_experiment.py -scheduling_policy FIFO -trace toy_workload.csv -output_file FIFO_toy_result.csv
 
-# SRSF
-python3 run_experiment.py -scheduling_policy SRSF -trace toy_workload.csv -output_file SRSF_toy_result.csv
+# Other policies
+for policy in {FIFO,SRSF,FS,}
+do
+	python3 run_experiment.py -scheduling_policy "$policy" -trace toy_workload.csv -output_file "$policy"_toy.csv
+	output_files+=("$policy"_toy.csv)
+	echo "$policy" done
+done
 
-# FS
-python3 run_experiment.py -scheduling_policy FS -trace toy_workload.csv -output_file FS_toy_result.csv
+python3 base/utils/result_summary.py -fnames "${output_files[@]}" -normalize_jct

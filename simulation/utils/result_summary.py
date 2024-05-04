@@ -1,4 +1,4 @@
-from parser import *
+from .parser import *
 import numpy as np
 import matplotlib.pyplot as plt
 import os, sys, argparse
