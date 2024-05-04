@@ -1,11 +1,13 @@
 import sys
-from helpers import flat_map
+
 import copy
-from common import Event, App, Job
 import numpy as np
-from GenericScheduler import AppGenericScheduler
 import math
 from datetime import datetime
+
+from common import Event, App, Job
+from GenericScheduler import AppGenericScheduler
+
 class AppPrioScheduler(AppGenericScheduler):
     """docstring for AppPrioScheduler"""
     def __init__(self, total_gpus, event_queue, app_list, prio_func, app_info_fn="results.csv", suppress_print=False):

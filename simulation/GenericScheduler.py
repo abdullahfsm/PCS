@@ -1,20 +1,15 @@
 import random
 import os, sys
-
 from datetime import datetime, timedelta
-
 import copy
-
-from common import Event, App, Job
 import numpy as np
-
 import pickle
-
 from functools import partial
 import ray
 import math
-
 from time import sleep
+
+from common import Event, App, Job
 
 
 @ray.remote
@@ -550,7 +545,7 @@ class AppGenericScheduler(object):
 
 
             if not ray.is_initialized():
-                ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+                ray.init(ignore_reinit_error=True, address="auto")
 
 
             self._sim_futures = list()

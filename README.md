@@ -1,5 +1,10 @@
 # Reproducing Results (OSDI'24)
 
+
+## Testbed setup
+For testbed setup and experiments please refer to `TESTBED.md`
+
+
 ## System Prerequisites 
 
 * This has been tested on Ubuntu 22.04 with Python 3.10.12. 

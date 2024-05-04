@@ -15,16 +15,16 @@ import csv
 import copy, bisect
 import matplotlib.pyplot as plt
 import pickle
-from MCSScheduler import AppMCScheduler
-from helpers import gen_data_from_cdf
-from common import App, Job, Event
+from fractions import Fraction as frac
 from datetime import datetime, timedelta
 from functools import partial
-from sim import *
-from fractions import Fraction as frac
 
 
 from models import Models
+from MCSScheduler import AppMCScheduler
+from helpers import gen_data_from_cdf
+from common import App, Job, Event
+from sim import *
 
 
 import pickle
