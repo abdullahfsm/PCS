@@ -1,10 +1,9 @@
 import sys
-from helpers import flat_map
+
 import copy
 import numpy as np
 import math
 from datetime import datetime
-
 
 from .common import Event, App, Job
 from .GenericScheduler import AppGenericScheduler
