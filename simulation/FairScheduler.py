@@ -258,12 +258,6 @@ class AppPracticalFairScheduler(AppGenericScheduler):
 
     def run(self):
 
-
-        pkl_fname = self._app_info_fn.replace(".csv", ".pkl")
-
-        os.system(f"rm {pkl_fname}")
-
-
         while len(self._event_queue) > 0 or len(self._end_event_queue) > 0:
 
             event = heappop(self.__pick_min_heap(self.__pick_min_heap(self._event_queue, self._end_event_queue), self._redivision_event_queue))

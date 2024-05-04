@@ -15,9 +15,9 @@ from base.FairScheduler import AppFairScheduler
 
 class RayAppFairScheduler(RayAppGenericScheduler):
     """docstring for RayAppFairScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, quantum=100, app_info_fn="results.csv", suppress_print=False):
+    def __init__(self, total_gpus, event_queue, app_list, quantum=100, app_info_fn="results.csv", suppress_print=False, estimate=True):
 
-        super(RayAppFairScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print)
+        super(RayAppFairScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=suppress_print, estimate=estimate)
 
         self._quantum = quantum
         self._min_quantum = quantum
@@ -42,21 +42,11 @@ class RayAppFairScheduler(RayAppGenericScheduler):
 
         # create app_list
         for virtual_app in snap_shot._active_apps+[copy.deepcopy(app)]:
-            
-
-            for attr in ['future', 'exec_func', 'trial_runner_queue']:
-                if hasattr(virtual_app, attr):
-                    delattr(virtual_app, attr)
-            
             snap_shot._app_list[virtual_app.app_id] = virtual_app
 
 
-
-        snap_shot._estimate = False
         snap_shot._suppress_print = True
         snap_shot._verbosity = 0
-        snap_shot._estimator = True
-
         snap_shot._init_time = self._init_time
         snap_shot._last_event_time = self._last_event_time
 
@@ -243,9 +233,6 @@ class RayAppFairScheduler(RayAppGenericScheduler):
                     self.remove_failed_apps()
                     last_self_check_time = datetime.now()
 
-            self.report_progress()
-
-            
             if resource_change_event or redivision_event:
                 
                 # recompute fair allocation
@@ -281,3 +268,8 @@ class RayAppFairScheduler(RayAppGenericScheduler):
 
 
             self.update_allocations(event.event_time)
+
+            self.report_progress()
+            
+            
+            
