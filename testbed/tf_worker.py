@@ -130,6 +130,8 @@ N_valid = 15000
 
 
 
+print()
+
 
 with FileLock(os.path.expanduser("~/.data.lock")):
     (x_train, y_train), (x_test, y_test) = datasets.cifar10.load_data()
@@ -186,10 +188,10 @@ model.compile(loss=loss,
 
 print("model compiled")
 
-# model.fit(x_train, y_train,
-#         batch_size=batch_size,
-#         epochs=epochs,
-#         verbose=0,
-#         validation_data=(x_validation, y_validation),
-#         # callbacks=[TuneReportCallback({"mean_accuracy": "accuracy"})],
-#         )
+model.fit(x_train, y_train,
+        batch_size=batch_size,
+        epochs=epochs,
+        # verbose=1,
+        # validation_data=(x_validation, y_validation),
+        # callbacks=[TuneReportCallback({"mean_accuracy": "accuracy"})],
+        )
