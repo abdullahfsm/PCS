@@ -18,7 +18,7 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
     def __init__(self, total_gpus, event_queue, app_list, app_info_fn="results.csv", suppress_print=False, estimate=True):
         super(RayAppAFSScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=suppress_print, estimate=estimate)
-    
+        print("Warning. compute_remaining_time makes 1job or linear scaling assumption")
 
     def sim_estimate(self, app):
 
@@ -90,8 +90,6 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
                 else:
                     cand = h
 
-
-
             allocation_increment = min(1, cand.demand)
 
             cand.tmp_gpus += allocation_increment
@@ -112,10 +110,12 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
 
     def compute_remaining_time(self, app, app_current_allocation):
 
-        thrpt = app.jobs[0].thrpt(app_current_allocation)
+        if len(app.jobs) == 1:
+            thrpt = app.jobs[0].thrpt(app_current_allocation)
+        else:
+            thrpt = min(app.demand, app_current_allocation)
 
-        if thrpt > 0:
-            
+        if thrpt > 0:        
             return app.remaining_service/thrpt
         else:
             print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")

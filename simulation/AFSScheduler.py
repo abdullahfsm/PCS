@@ -17,7 +17,7 @@ class AppAFSScheduler(AppGenericScheduler):
     """docstring for AppAFSScheduler"""
     def __init__(self, total_gpus, event_queue, app_list, app_info_fn="results.csv", suppress_print=False, verbosity=1, p_error=None):
         super(AppAFSScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print, verbosity, p_error)
-        print("Warning. compute_remaining_time makes 1job assumption")
+        print("Warning. compute_remaining_time makes 1job or linear scaling assumption")
                 
 
 
@@ -49,82 +49,15 @@ class AppAFSScheduler(AppGenericScheduler):
                 else:
                     cand = h
 
-                '''
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error', category=RuntimeWarning)
-                    
-                    try:
 
+            allocation_increment = min(1, cand.demand)
 
-                    except RuntimeWarning as rw:
-
-                        print(f"Warning: {rw}")
-
-                        print("====================")
-                        print("demands ad alloc:")
-                        print(l.demand)
-                        print(l.tmp_gpus)
-                        print(l.remaining_service)
-                        print(l.estimated_remaining_service)
-                        print(l.status)
-                        print(h.demand)
-                        print(h.tmp_gpus)
-                        print(h.estimated_remaining_service)
-                        print(h.remaining_service)
-                        print(h.status)
-                        print("====================")
-                        print("thrpt:")
-                        
-                        print(l.jobs[0].thrpt(l.tmp_gpus))
-                        print(l.jobs[0].thrpt(l.tmp_gpus+1))
-                        print(h.jobs[0].thrpt(h.tmp_gpus))
-                        print(h.jobs[0].thrpt(h.tmp_gpus+1))
-                        print("====================")
-                        print("remaining times:")
-                        print(self.compute_remaining_time(l, l.tmp_gpus))
-                        print(self.compute_remaining_time(l, l.tmp_gpus+1))
-                        print(self.compute_remaining_time(h, h.tmp_gpus))
-                        print(self.compute_remaining_time(h, h.tmp_gpus+1))
-
-                        print("====================")
-                        print("sl's:")
-                        print(sl0,sl1,sh0,sh1)
-                        print("====================")
-                                                
-                        sys.exit(1)
-
-                    # except Exception as e:
-                    #     print("====================")
-
-                    #     print(l.demand)
-                    #     print(h.demand)
-
-                    #     print("====================")
-                    #     print(l.tmp_gpus)
-                    #     print(l.jobs[0].thrpt(l.tmp_gpus))
-                    #     print(h.tmp_gpus)
-                    #     print(h.jobs[0].thrpt(h.tmp_gpus))
-                    #     print("====================")
-
-                    #     print(self.compute_remaining_time(l, l.tmp_gpus))
-                    #     print(self.compute_remaining_time(l, l.tmp_gpus+1))
-                    #     print(self.compute_remaining_time(h, h.tmp_gpus))
-                    #     print(self.compute_remaining_time(h, h.tmp_gpus+1))
-
-
-                    #     print(sl0,sl1,sh0,sh1)
-                    #     print("====================")
-                    #     raise e
-                '''
-
-            cand.tmp_gpus += 1
-
-
+            cand.tmp_gpus += allocation_increment
 
             if cand.tmp_gpus == cand.demand:
                 js.remove(cand)
 
-            gpus -= 1
+            gpus -= allocation_increment
         
 
         app_id_to_allocation = {}
@@ -136,27 +69,18 @@ class AppAFSScheduler(AppGenericScheduler):
 
     def compute_remaining_time(self, app, app_current_allocation):
 
-
-
-        thrpt = app.jobs[0].thrpt(app_current_allocation)
-
-        # if len(app.jobs) == 1:
-        #     thrpt = app.jobs[0].thrpt(app_current_allocation)
-        # else:
-        #     thrpt = app.jobs[0].thrpt(app_current_allocation)
-
-        if thrpt > 0:
-            
-            # changed here
-            return app.estimated_remaining_service/thrpt
-
+        if len(app.jobs) == 1:
+            thrpt = app.jobs[0].thrpt(app_current_allocation)
         else:
-            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service} app_current_allocation: {app_current_allocation} app.demand: {app.demand} job.demand: {app.jobs[0].demand}")
+            thrpt = min(app.demand, app_current_allocation)
 
+        if thrpt > 0:        
+            return app.remaining_service/thrpt
+        else:
+            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
 
         return float('inf')
 
-        # app_a.remaining_service/current_allocation[app_a.app_id] if current_allocation[app_a.app_id] > 0 else float('inf')
 
     def top_priority(self, current_allocation):
         while True:
