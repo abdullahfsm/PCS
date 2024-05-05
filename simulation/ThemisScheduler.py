@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 import math
 
 
-from common import Event, App, Job
 from GenericScheduler import AppGenericScheduler
+from common import Event, App, Job
 
 
 class AppThemisScheduler(AppGenericScheduler):
@@ -88,11 +88,47 @@ class AppThemisScheduler(AppGenericScheduler):
         
         heappush(self._redivision_event_queue, Event(event_id=0, event_time=event.event_time + timedelta(seconds=float(next_redivision)), event_type="REDIVISION"))                
 
+
+    def __pick_min_event(self):
+
+
+        if len(self._event_queue) == 0:
+            return self._closest_end_event
+        elif not self._closest_end_event:
+            return self._event_queue.pop()
+
+        new_event = self._event_queue.pop()
+
+        if new_event < self._closest_end_event:
+            return new_event
+
+        self._event_queue.append(new_event)
+        return self._closest_end_event
+
+
+
+
+
     def run(self, cond=lambda: False):
 
-        while len(self._event_queue) > 0 or len(self._end_event_queue) > 0:
 
-            event = heappop(self.__pick_min_heap(self.__pick_min_heap(self._event_queue, self._end_event_queue), self._redivision_event_queue))
+        if self._estimator:
+            p_of_estimate = min(5000.0/len(self._app_list), 1.0)
+
+            if not ray.is_initialized():
+                ray.init(ignore_reinit_error=True, address="auto")
+
+            self._sim_futures = list()
+
+        while len(self._event_queue) > 0 or self._closest_end_event:
+
+            event = heappop(
+                self.__pick_min_heap(
+                    
+                    [self.__pick_min_event()],
+                    self._redivision_event_queue,
+                )
+            )
 
             self.progress_active_apps(event.event_time)            
             self._last_event_time = event.event_time
@@ -112,10 +148,37 @@ class AppThemisScheduler(AppGenericScheduler):
 
             self.update_end_events(event.event_time)
 
-            if event.event_type == Event.APP_SUB and self._estimate and np.random.uniform() < 1.2:
-                self.sim_estimate(app = self._app_list[event.app_id])
+            if event.event_type == Event.APP_SUB and self._estimator and random.uniform(0,1) < p_of_estimate:
+                ret = self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time)
+                if ret:
+                    self._sim_futures.append(ret)
 
             if cond():
                 break
 
 
+
+        # ray changes here
+        if self._estimator:
+
+            if len(self._snap_shots) > 0:
+                self._sim_futures.append(multi_runner.remote(self._snap_shots))
+
+            batched_futures = ray.get(self._sim_futures)
+            futures = []
+            for b in batched_futures:
+                futures += b
+
+            total_tasks = len(futures)
+            finished_futures = list()
+            
+            while futures:
+                finished, futures = ray.wait(futures)
+                finished_futures += finished
+            
+            for future in finished_futures:            
+                app_id, estimated_start_time, estimated_end_time = ray.get(future)
+                self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
+                if self._verbosity == 4:
+                    print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
+        self.log_apps()

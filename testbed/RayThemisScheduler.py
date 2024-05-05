@@ -3,7 +3,7 @@ from RayGenericScheduler import RayAppGenericScheduler
 import os, sys
 from datetime import datetime, timedelta
 from time import sleep
-import numpy as np
+import math
 from functools import partial
 import copy
 
@@ -12,10 +12,10 @@ from common import Event, App, Job
 
 class RayAppThemisScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, quantum=120, app_info_fn="results.csv", suppress_print=False):
-        super(RayAppThemisScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=False)
+    def __init__(self, total_gpus, event_queue, app_list, quantum=120, app_info_fn="results.csv", suppress_print=False, estimate=True):
+        super(RayAppThemisScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print=suppress_print, estimate=estimate)
         self._quantum = quantum
-    
+
 
     def sim_estimate(self, app):
 
@@ -33,24 +33,12 @@ class RayAppThemisScheduler(RayAppGenericScheduler):
         snap_shot._app_id_to_allocation = copy.deepcopy(self._app_id_to_allocation)
 
         for virtual_app in snap_shot._active_apps+[copy.deepcopy(app)]:
-            
-
-            for attr in ['future', 'exec_func', 'trial_runner_queue']:
-                if hasattr(virtual_app, attr):
-                    delattr(virtual_app, attr)
-            
             snap_shot._app_list[virtual_app.app_id] = virtual_app
 
-
-
-        snap_shot._estimate = False
         snap_shot._suppress_print = True
         snap_shot._verbosity = 0
-        snap_shot._estimator = True
-
         snap_shot._init_time = self._init_time
         snap_shot._last_event_time = self._last_event_time
-
 
         snap_shot.update_end_events(datetime.now())
 
@@ -113,7 +101,7 @@ class RayAppThemisScheduler(RayAppGenericScheduler):
 
             app_slice = app_slice[1:]
 
-        assert(np.isclose(residual, 0)), residual
+        assert(math.isclose(residual, 0)), residual
 
         return app_id_to_allocation
 
