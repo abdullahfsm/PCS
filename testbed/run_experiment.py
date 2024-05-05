@@ -399,7 +399,8 @@ if __name__ == '__main__':
         scheduler = RayAppAFSScheduler(total_gpus=total_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    app_info_fn=output_file)
+                                    app_info_fn=output_file,
+                                    estimate=False)
 
     elif scheduling_policy == "THEMIS":
         scheduler = RayAppThemisScheduler(total_gpus=total_gpus,

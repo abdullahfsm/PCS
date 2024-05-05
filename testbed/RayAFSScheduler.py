@@ -128,7 +128,11 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
 
         residual = min(total_demand, self._max_capacity)
 
+
         app_id_to_allocation = self.alg_c_concept(self._max_capacity)
+
+        print(f"DEBUG: total_demand: {total_demand} residual: {residual} app_id_to_allocation: {app_id_to_allocation}")
+
     
         for app_id in app_id_to_allocation:
             
