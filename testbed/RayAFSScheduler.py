@@ -69,15 +69,11 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
         app_id_to_allocation = {}
 
         for a in self._active_apps:
-            app_id_to_allocation[a.app_id] = 0
+            a.tmp_gpus = 0
 
             if a.demand > 0:
                 js.append(a)
 
-
-
-        for m in js:
-            m.tmp_gpus = 0
         gpus = total_gpus
 
         while gpus > 0 and len(js) > 0:
@@ -113,8 +109,8 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
         
 
 
-        for m in self._active_apps:
-            app_id_to_allocation[m.app_id] = m.tmp_gpus
+        for a in self._active_apps:
+            app_id_to_allocation[a.app_id] = a.tmp_gpus
         return app_id_to_allocation
 
 
