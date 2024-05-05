@@ -20,11 +20,18 @@ class AppAFSScheduler(AppGenericScheduler):
         print("Warning. compute_remaining_time makes 1job or linear scaling assumption")
                 
 
-
     def alg_c_concept(self, total_gpus):
-        js = [m for m in self._active_apps]
-        for m in js:
-            m.tmp_gpus = 0
+
+        js = list()
+        
+        app_id_to_allocation = {}
+
+        for a in self._active_apps:
+            a.tmp_gpus = 0
+
+            if a.demand > 0:
+                js.append(a)
+
         gpus = total_gpus
 
         while gpus > 0 and len(js) > 0:
@@ -49,7 +56,6 @@ class AppAFSScheduler(AppGenericScheduler):
                 else:
                     cand = h
 
-
             allocation_increment = min(1, cand.demand)
 
             cand.tmp_gpus += allocation_increment
@@ -60,12 +66,10 @@ class AppAFSScheduler(AppGenericScheduler):
             gpus -= allocation_increment
         
 
-        app_id_to_allocation = {}
 
-        for m in self._active_apps:
-            app_id_to_allocation[m.app_id] = m.tmp_gpus
+        for a in self._active_apps:
+            app_id_to_allocation[a.app_id] = a.tmp_gpus
         return app_id_to_allocation
-
 
     def compute_remaining_time(self, app, app_current_allocation):
 
