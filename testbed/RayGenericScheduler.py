@@ -123,6 +123,10 @@ class RayAppGenericScheduler(AppGenericScheduler):
         self._num_finished_jobs += 1
         app.last_event_time = event.event_time
 
+        # job_statuses = [j.status == Job.END for j in app.jobs.values()]
+        # if all(job_statuses):
+        #     app.status = App.PENDING_END
+
 
     def handle_app_ping_event(self, event):
         app = self._app_list[event.app_id]

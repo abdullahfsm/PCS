@@ -26,6 +26,7 @@ class App(object):
     PREEMPTED = "PREEMPTED"
     FAILED = "FAILED"
     END = "END"
+    PENDING_END = "PENDING_END"
 
     
     """docstring for App"""
