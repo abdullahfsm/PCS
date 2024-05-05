@@ -91,14 +91,15 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
                     cand = h
 
 
-            cand.tmp_gpus += 1
 
+            allocation_increment = min(1, cand.demand)
 
+            cand.tmp_gpus += allocation_increment
 
             if cand.tmp_gpus == cand.demand:
                 js.remove(cand)
 
-            gpus -= 1
+            gpus -= allocation_increment
         
 
         app_id_to_allocation = {}
