@@ -136,7 +136,14 @@ class AppAFSScheduler(AppGenericScheduler):
 
     def compute_remaining_time(self, app, app_current_allocation):
 
+
+
         thrpt = app.jobs[0].thrpt(app_current_allocation)
+
+        # if len(app.jobs) == 1:
+        #     thrpt = app.jobs[0].thrpt(app_current_allocation)
+        # else:
+        #     thrpt = app.jobs[0].thrpt(app_current_allocation)
 
         if thrpt > 0:
             
@@ -144,7 +151,7 @@ class AppAFSScheduler(AppGenericScheduler):
             return app.estimated_remaining_service/thrpt
 
         else:
-            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service} app_current_allocation: {app_current_allocation}")
+            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service} app_current_allocation: {app_current_allocation} app.demand: {app.demand} job.demand: {app.jobs[0].demand}")
 
 
         return float('inf')
