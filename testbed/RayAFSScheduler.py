@@ -63,7 +63,19 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
 
 
     def alg_c_concept(self, total_gpus):
-        js = [m for m in self._active_apps]
+
+        js = list()
+        
+        app_id_to_allocation = {}
+
+        for a in self._active_apps:
+            app_id_to_allocation[a.app_id] = 0
+
+            if a.demand > 0:
+                js.append(a)
+
+
+
         for m in js:
             m.tmp_gpus = 0
         gpus = total_gpus
@@ -100,7 +112,6 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
             gpus -= allocation_increment
         
 
-        app_id_to_allocation = {}
 
         for m in self._active_apps:
             app_id_to_allocation[m.app_id] = m.tmp_gpus
