@@ -12,7 +12,7 @@ done
 
 
 # Other policies
-for policy in {FIFO,SRSF,FS,}
+for policy in {FIFO,SRSF,AFS,THEMIS,}
 do
 	python3 testbed/run_experiment.py -scheduling_policy "$policy" -trace toy_trace -output_file "$policy"_toy.csv
 	output_files+=("$policy"_toy.csv)
