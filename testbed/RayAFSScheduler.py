@@ -118,7 +118,7 @@ class RayAppAFSScheduler(RayAppGenericScheduler):
         if thrpt > 0:        
             return app.remaining_service/thrpt
         else:
-            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
+            print(f"app_id: {app.app_id} thrpt is: {thrpt} remaining_service: {app.remaining_service} job_statuses: {[j.status for j in app.jobs.values()]} app_status: {app.status}")
 
         return float('inf')
 
