@@ -12,6 +12,8 @@ import ray
 from GenericScheduler import AppGenericScheduler
 from common import Event, App, Job
 
+import random
+
 
 class AppThemisScheduler(AppGenericScheduler):
     """docstring for AppThemisScheduler"""
