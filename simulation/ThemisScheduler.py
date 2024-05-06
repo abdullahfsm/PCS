@@ -149,12 +149,17 @@ class AppThemisScheduler(AppGenericScheduler):
 
         while len(self._event_queue) > 0 or self._closest_end_event:
 
+
+
             event = self.__pick_min_event()
+
+
+            print(f"event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event} redivision_event: {self._redivision_event}")
 
             self.progress_active_apps(event.event_time)            
             self._last_event_time = event.event_time
 
-            self.report_progress(event)
+            # self.report_progress(event)
 
             if event.event_type == Event.APP_SUB:
                 self.handle_app_sub_event(event)
