@@ -131,8 +131,7 @@ def increase_file_limit():
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         stdout, stderr = process.communicate()
 
-
-        return process.returncode == 0 and stdout.strip() == limit
+        return process.returncode == 0 and int(stdout.strip()) == limit
 
     limit = 100000
 
@@ -162,7 +161,6 @@ def increase_file_limit():
     success = True
 
     for node in list_of_nodes:
-
         if check_ulimit(node, limit):
             print(f"successfully set ulimit -n to {limit} on {node}")
         else:
@@ -172,6 +170,20 @@ def increase_file_limit():
     return success
 
 
+
+def run_on_nodes(cmd):
+
+    threads = list()
+    for node in list_of_nodes:
+        
+
+        t = Thread(target=os.system, args=(f"ssh {node} '~/.bashrc; {cmd}'",))
+        t.start()
+        threads.append(t)
+
+
+    for t in threads:
+        t.join()
 
 def install():
     
@@ -198,6 +210,12 @@ def install():
     print("Installing dependencies")
     installer()
 
+    run_on_nodes("conda init")
+    run_on_nodes("conda create -y -n osdi24 python=3.6.10")
+    run_on_nodes("conda activate osdi24")
+    run_on_nodes("cd ~/PCS/utils; python3 -m pip install -r requirements.txt")
+    run_on_nodes("echo conda activate osdi24 >> ~/.bashrc")
+    
     print("Configuring ray")
     configure_ray()
 
