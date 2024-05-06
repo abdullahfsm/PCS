@@ -96,37 +96,37 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
 
-    def __pick_min_event(self):
-
-        # numbers = [self._closest_end_event, self._redivision_event]
-        numbers = [self._closest_end_event]
-        lst = self._event_queue
-
-        inf_event = Event(event_id=-1, event_time=datetime.max, event_type=Event.UNDEFINED)
-
-
-        numbers = [n if n else inf_event for n in numbers]
-        min_answer = min(min(numbers), lst[-1] if lst else inf_event)
-
-        if lst and min_answer == lst[-1]:
-            lst.pop()
-        return min_answer
-
     # def __pick_min_event(self):
 
+    #     # numbers = [self._closest_end_event, self._redivision_event]
+    #     numbers = [self._closest_end_event]
+    #     lst = self._event_queue
 
-    #     if len(self._event_queue) == 0:
-    #         return self._closest_end_event
-    #     elif not self._closest_end_event:
-    #         return self._event_queue.pop()
+    #     inf_event = Event(event_id=-1, event_time=datetime.max, event_type=Event.UNDEFINED)
 
-    #     new_event = self._event_queue.pop()
 
-    #     if new_event < self._closest_end_event:
-    #         return new_event
+    #     numbers = [n if n else inf_event for n in numbers]
+    #     min_answer = min(min(numbers), lst[-1] if lst else inf_event)
 
-    #     self._event_queue.append(new_event)
-    #     return self._closest_end_event
+    #     if lst and min_answer == lst[-1]:
+    #         lst.pop()
+    #     return min_answer
+
+    def __pick_min_event(self):
+
+
+        if len(self._event_queue) == 0:
+            return self._closest_end_event
+        elif not self._closest_end_event:
+            return self._event_queue.pop()
+
+        new_event = self._event_queue.pop()
+
+        if new_event < self._closest_end_event:
+            return new_event
+
+        self._event_queue.append(new_event)
+        return self._closest_end_event
 
 
 
