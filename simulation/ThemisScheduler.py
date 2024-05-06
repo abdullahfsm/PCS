@@ -151,7 +151,6 @@ class AppThemisScheduler(AppGenericScheduler):
 
             event = self.__pick_min_event()
 
-
             self.progress_active_apps(event.event_time)            
             self._last_event_time = event.event_time
 
