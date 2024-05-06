@@ -133,6 +133,19 @@ class AppThemisScheduler(AppGenericScheduler):
     def run(self, cond=lambda: False):
 
 
+
+        if self._app_info_fn != None and not self._suppress_print:
+
+            if self._collect_dataset_stats_flag:
+                self._training_dataset_pkl = self._app_info_fn.replace('.csv', '.pkl')
+
+                with open(self._training_dataset_pkl, 'wb') as fp:
+                    pass
+
+            with open(self._app_info_fn,'w') as fp:
+                fp.write("app_id,submit_time,start_time,end_time,estimated_start_time,estimated_end_time,fair_act,service,num_apps_seen_diff\n")
+
+
         if self._estimator:
             p_of_estimate = min(5000.0/len(self._app_list), 1.0)
 
