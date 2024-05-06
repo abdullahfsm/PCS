@@ -163,8 +163,8 @@ class AppThemisScheduler(AppGenericScheduler):
             elif event.event_type == Event.JOB_END:
                 self.handle_job_end_event(event)
 
-            if event.event_type in [Event.APP_SUB, Event.JOB_END, "REDIVISION"]:
-                self.redivision(event)
+            # if event.event_type in [Event.APP_SUB, Event.JOB_END, "REDIVISION"]:
+            #     self.redivision(event)
 
             self.update_allocations(event.event_time)
 
