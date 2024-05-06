@@ -192,4 +192,7 @@ class AppThemisScheduler(AppGenericScheduler):
                 self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
                 if self._verbosity == 4:
                     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
+
+
+        
         self.log_apps()
