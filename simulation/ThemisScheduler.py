@@ -101,9 +101,12 @@ class AppThemisScheduler(AppGenericScheduler):
         numbers = [self._closest_end_event, self._redivision_event]
         lst = self._event_queue
 
-        numbers = [n if n else float('inf') for n in numbers]
+        inf_event = Event(event_id=-1, event_time=datetime.max, event_type=Event.UNDEFINED)
+
+
+        numbers = [n if n else inf_event for n in numbers]
         min_number = min(numbers)
-        min_answer = min(min(numbers), lst[-1] if lst else float('inf'))
+        min_answer = min(min(numbers), lst[-1] if lst else inf_event)
         if lst and min_answer == lst[-1]:
             lst.pop()
         return min_answer

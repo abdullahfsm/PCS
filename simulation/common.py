@@ -282,7 +282,7 @@ class Event(object):
     JOB_SUB = "JOB_SUB"
     JOB_START = "JOB_START"
     JOB_END = "JOB_END"
-
+    UNDEFINED = "UNDEFINED"
 
 
     """docstring for Event"""
