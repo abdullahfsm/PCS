@@ -173,7 +173,7 @@ class AppThemisScheduler(AppGenericScheduler):
             self._last_event_time = event.event_time
 
 
-            # self.report_progress(event)
+            self.report_progress(event)
 
 
             if event.event_type == Event.APP_SUB:
@@ -199,8 +199,7 @@ class AppThemisScheduler(AppGenericScheduler):
                 if ret:
                     self._sim_futures.append(ret)
                 
-
-            print(f"AFTER: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event.event_time if self._closest_end_event else None} len(active_apps): {len(self._active_apps)}")
+            # print(f"AFTER: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event.event_time if self._closest_end_event else None} len(active_apps): {len(self._active_apps)}")
 
             if cond():
                 break
