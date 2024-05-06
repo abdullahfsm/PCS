@@ -1,3 +1,4 @@
+#!/bin/bash
 cd ~/PCS/utils
 
 #installing cuda
@@ -28,9 +29,7 @@ conda init
 conda create -y -n osdi24 python=3.6.10
 echo "conda activate osdi24" >> ~/.bashrc
 
-
-# get ray version
-curl -o ray-2.0.0.dev0-cp36-cp36m-manylinux2014_x86_64.whl "https://zenodo.org/records/11111741/files/ray-2.0.0.dev0-cp36-cp36m-manylinux2014_x86_64.whl?download=1"
+conda activate osdi24
 
 # installing packages
 python3 -m pip install -r requirements.txt

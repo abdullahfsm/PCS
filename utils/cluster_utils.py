@@ -170,6 +170,7 @@ def increase_file_limit():
 
 def install():
     
+
     print("Setting up keys to ssh between cluster nodes")
     success = setup_keys()
     
@@ -177,6 +178,12 @@ def install():
     if not success:
         print("Failed to set up keys. Exiting!")
         sys.exit(1)
+
+
+
+    print("Downloading Ray")
+    os.system("bash download_ray.sh")    
+
 
     print("Syncing cluster files")
     rsync()
