@@ -64,13 +64,11 @@ def setup_keys():
 
 
 def configure_ray(exclude_head=False):
-    # if exclude_head:
-    #     list_of_nodes = worker_nodes
 
-    print(list_of_nodes)
+    nodes_to_configure = list_of_nodes[1:] if exclude_head else list_of_nodes[:]
 
     threads = list()
-    for node in list_of_nodes:
+    for node in nodes_to_configure:
         
 
         t = Thread(target=os.system, args=(f"ssh {node} <configure_ray.sh",))
@@ -90,8 +88,8 @@ def rsync():
 
 def installer(exclude_head=False):
 
-    if exclude_head:
-        list_of_nodes = worker_nodes
+
+    nodes_to_install = list_of_nodes[1:] if exclude_head else list_of_nodes[:]
 
     threads = list()
     for node in list_of_nodes:
