@@ -108,7 +108,7 @@ class AppThemisScheduler(AppGenericScheduler):
         numbers = [n if n else inf_event for n in numbers]
         min_answer = min(min(numbers), lst[-1] if lst else inf_event)
 
-        if lst and min_answer == lst[-1]:
+        if lst and min_answer.event_type == Event.APP_SUB:
             lst.pop()
         return min_answer
 
