@@ -154,7 +154,7 @@ class AppThemisScheduler(AppGenericScheduler):
             event = self.__pick_min_event()
 
 
-            print(f"BEFORE: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event} redivision_event: {self._redivision_event}")
+            print(f"BEFORE: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event} redivision_event: {self._redivision_event} len(active_apps): {len(self._active_apps)}")
 
             self.progress_active_apps(event.event_time)            
             self._last_event_time = event.event_time
@@ -181,7 +181,7 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
 
-            print(f"BEFORE: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event} redivision_event: {self._redivision_event}")
+            print(f"AFTER: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event} redivision_event: {self._redivision_event} len(active_apps): {len(self._active_apps)}")
             
             if cond():
                 break
