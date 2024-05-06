@@ -447,8 +447,14 @@ def run_simulations_parallel(
         app_lists[seed] = copy.deepcopy(app_list)
         event_queues[seed] = copy.deepcopy(event_queue)
 
+
     if not ray.is_initialized():
-        ray.init(ignore_reinit_error=True)
+        if ray.__version__ == '2.0.0.dev0':
+            ray.init(ignore_reinit_error=True, address="auto")
+        elif ray.__version__ == '2.10.0':
+            ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+        else:
+            print("Warning: Incompatible Ray version --- may result in erroneous behaviour")
 
     futures = list()
 
