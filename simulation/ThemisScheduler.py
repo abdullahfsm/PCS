@@ -199,6 +199,8 @@ class AppThemisScheduler(AppGenericScheduler):
                     self._sim_futures.append(ret)
                 
 
+            print(f"AFTER: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event.event_time} len(active_apps): {len(self._active_apps)}")
+
             if cond():
                 break
 
