@@ -129,7 +129,7 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
 
-    
+    '''
     def run(self, cond=lambda: False):
 
 
@@ -236,3 +236,4 @@ class AppThemisScheduler(AppGenericScheduler):
 
         self.log_apps()
     
+    '''
