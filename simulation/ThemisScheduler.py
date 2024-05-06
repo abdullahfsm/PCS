@@ -98,8 +98,7 @@ class AppThemisScheduler(AppGenericScheduler):
 
     def __pick_min_event(self):
 
-        # numbers = [self._closest_end_event, self._redivision_event]
-        numbers = [self._closest_end_event]
+        numbers = [self._closest_end_event, self._redivision_event]
         lst = self._event_queue
 
         inf_event = Event(event_id=-1, event_time=datetime.max, event_type=Event.UNDEFINED)
@@ -182,6 +181,8 @@ class AppThemisScheduler(AppGenericScheduler):
             elif event.event_type == Event.JOB_END:
                 self.handle_job_end_event(event)
 
+            if event.event_type in [Event.APP_SUB, Event.JOB_END, "REDIVISION"]:
+                self.redivision(event)
 
             self.update_allocations(event.event_time)
 
