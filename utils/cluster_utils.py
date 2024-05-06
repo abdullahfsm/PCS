@@ -177,7 +177,7 @@ def run_on_nodes(cmd):
     for node in list_of_nodes:
         
 
-        t = Thread(target=os.system, args=(f"ssh {node} '~/.bashrc; {cmd}'",))
+        t = Thread(target=os.system, args=(f"ssh {node} 'source ~/.bashrc; {cmd}'",))
         t.start()
         threads.append(t)
 
@@ -210,11 +210,11 @@ def install():
     print("Installing dependencies")
     installer()
 
-    run_on_nodes("conda init")
+    print("Activating conda")
+    run_on_nodes("~/miniconda/bin/conda init")
     run_on_nodes("conda create -y -n osdi24 python=3.6.10")
-    run_on_nodes("conda activate osdi24")
-    run_on_nodes("cd ~/PCS/utils; python3 -m pip install -r requirements.txt")
     run_on_nodes("echo conda activate osdi24 >> ~/.bashrc")
+    run_on_nodes("conda activate osdi24; cd ~/PCS/utils; python3 -m pip install -r requirements.txt")
     
     print("Configuring ray")
     configure_ray()
