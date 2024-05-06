@@ -22,7 +22,7 @@ class AppThemisScheduler(AppGenericScheduler):
     def __init__(self, total_gpus, event_queue, app_list, quantum=1, app_info_fn="results.csv", suppress_print=False, verbosity=1, p_error=None):
         super(AppThemisScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print, verbosity, p_error)
 
-        self._redivision_event_queue = list()
+        self._redivision_event = None
         self._quantum = quantum
 
                 
@@ -88,15 +88,27 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
     def redivision(self, event):
-        self._redivision_event_queue = list()
+        self._redivision_event = None
 
         next_redivision = self._quantum
         
-        heappush(self._redivision_event_queue, Event(event_id=0, event_time=event.event_time + timedelta(seconds=float(next_redivision)), event_type="REDIVISION"))                
+        self._redivision_event = Event(event_id=0, event_time=event.event_time + timedelta(seconds=float(next_redivision)), event_type="REDIVISION")
+
 
 
     def __pick_min_event(self):
 
+        numbers = [self._closest_end_event, self._redivision_event]
+        lst = self._event_queue
+
+        numbers = [n if n else float('inf') for n in numbers]
+        min_number = min(numbers)
+        min_answer = min(min(numbers), lst[-1] if lst else float('inf'))
+        if lst and min_answer == lst[-1]:
+            lst.pop()
+        return min_answer
+
+        pass
 
         if len(self._event_queue) == 0:
             return self._closest_end_event
@@ -132,17 +144,10 @@ class AppThemisScheduler(AppGenericScheduler):
             self._sim_futures = list()
 
 
-        print(self._event_queue)
-
         while len(self._event_queue) > 0 or self._closest_end_event:
 
-            event = heappop(
-                self.__pick_min_heap(
-                    
-                    [self.__pick_min_event()],
-                    self._redivision_event_queue,
-                )
-            )
+            event = self.__pick_min_event()
+
 
             self.progress_active_apps(event.event_time)            
             self._last_event_time = event.event_time
