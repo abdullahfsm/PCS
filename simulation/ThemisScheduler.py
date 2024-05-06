@@ -98,7 +98,8 @@ class AppThemisScheduler(AppGenericScheduler):
 
     def __pick_min_event(self):
 
-        numbers = [self._closest_end_event, self._redivision_event]
+        # numbers = [self._closest_end_event, self._redivision_event]
+        numbers = [self._closest_end_event]
         lst = self._event_queue
 
         inf_event = Event(event_id=-1, event_time=datetime.max, event_type=Event.UNDEFINED)
