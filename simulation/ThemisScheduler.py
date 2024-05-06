@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import math
 
 
+import ray
+
 from GenericScheduler import AppGenericScheduler
 from common import Event, App, Job
 
