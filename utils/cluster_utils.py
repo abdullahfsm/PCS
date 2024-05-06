@@ -50,11 +50,17 @@ def setup_keys():
     os.system(f'bash setup_keys.sh {N} {user_name}')
     time.sleep(1)
     
+
+    successful = True
+
     for nodes in list_of_nodes:
         if check_ssh(nodes):
             print(f"SSH connection to {nodes} successful")
         else:
             print(f"SSH connection to {nodes} failed")
+            successful = False
+
+    return successful
 
 
 
@@ -78,13 +84,12 @@ def configure_ray(exclude_head=False):
 
 
 
-def rsync_cluster():
+def rsync():
     for node in worker_nodes:
         os.system(f"rsync -av {user}/PCS {node}:{user}/")
 
 
 def installer(exclude_head=False):
-
 
     if exclude_head:
         list_of_nodes = worker_nodes
@@ -104,6 +109,7 @@ def installer(exclude_head=False):
 
     with open("/tmp/state", "w") as f:
         f.write("dependencies_installed")
+
     print("installation done!")
 
 
@@ -151,20 +157,44 @@ def increase_file_limit():
         os.system(f"sudo rsync -e 'ssh -o StrictHostKeyChecking=no' /etc/security/limits.conf {node}:/etc/security/")
 
 
+    success = True
+
     for node in list_of_nodes:
 
         if check_ulimit(node, limit):
             print(f"successfully set ulimit -n to {limit} on {node}")
         else:
             print(f"ulimit -n is NOT {limit} on {node}")
+            success = False
+
+    return success
 
 
 
 def install():
-    setup_keys()
-    rsync_cluster()
+    
+    print("Setting up keys to ssh between cluster nodes")
+    success = setup_keys()
+    
+
+    if not success:
+        print("Failed to set up keys. Exiting!")
+        sys.exit(1)
+
+    print("Syncing cluster files")
+    rsync()
+    
+    print("Installing dependencies")
     installer()
-    increase_file_limit()
+
+    print("Increasing ulimit")
+    success = increase_file_limit()
+
+    if not success:
+        print("Failed to set up ulimit. This may result in erroneous behaviour when running ray")
+        sys.exit(1)
+
+    print("Rebooting!")
     cluster_reboot()
 
 
