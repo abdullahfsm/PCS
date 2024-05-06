@@ -197,5 +197,7 @@ class AppThemisScheduler(AppGenericScheduler):
 
         print()
         print(self._num_finished_apps)
+        print(self._event_queue)
+        print(self._closest_end_event)
 
         self.log_apps()
