@@ -3,7 +3,7 @@
 
 output_files=()
 # THEMIS
-python3 simulation/sim.py -workload gavel -load 1.2 -num_gpus 64 -num_apps 1000 -scheduling_policy THEMIS -output_file THEMIS_gavel_result.csv
+python3 simulation/sim.py -workload gavel -load 1.2 -num_gpus 64 -num_apps 1000 -scheduling_policy THEMIS -output_file THEMIS_gavel_result.csv -estimate 0
 output_files+=(THEMIS_gavel_result.csv)
 
 # # FIFO
