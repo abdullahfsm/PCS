@@ -80,8 +80,9 @@ class AppAFSScheduler(AppGenericScheduler):
 
         if thrpt > 0:        
             return app.remaining_service/thrpt
-        else:
-            print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
+
+        # else:
+        #     print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
 
         return float('inf')
 
