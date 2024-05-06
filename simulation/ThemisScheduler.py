@@ -10,6 +10,8 @@ import math
 import ray
 
 from GenericScheduler import AppGenericScheduler
+from GenericScheduler import multi_runner
+
 from common import Event, App, Job
 
 import random
