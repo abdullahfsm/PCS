@@ -34,20 +34,11 @@ list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
 head_node, *worker_nodes = list_of_nodes[:]
 head_port = 6379
 
-
-def check_ssh(ip):
-    command = f"ssh -o BatchMode=yes {ip} exist"
-
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-    stdout, stderr = process.communicate()
-
-    return process.returncode == 0
-
 def setup_keys():
     def check_ssh(ip):
 
 
-        command = f"ssh -o BatchMode=yes {ip} exist"
+        command = f"ssh -o BatchMode=yes {ip} exit"
 
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         stdout, stderr = process.communicate()
@@ -194,6 +185,9 @@ def install():
     
     print("Installing dependencies")
     installer()
+
+    print("Configuring ray")
+    configure_ray()
 
     print("Increasing ulimit")
     success = increase_file_limit()
