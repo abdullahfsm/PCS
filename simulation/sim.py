@@ -371,6 +371,7 @@ def run_sim(args):
         scheduler = AppThemisScheduler(total_gpus=args.num_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
+                                    quantum=10,
                                     app_info_fn=args.output_file)
     elif args.scheduling_policy == "AFS":
         scheduler = AppAFSScheduler(total_gpus=args.num_gpus,
