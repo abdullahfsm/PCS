@@ -106,8 +106,8 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
         numbers = [n if n else inf_event for n in numbers]
-        min_number = min(numbers)
         min_answer = min(min(numbers), lst[-1] if lst else inf_event)
+
         if lst and min_answer == lst[-1]:
             lst.pop()
         return min_answer
@@ -131,6 +131,110 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
 
+    def run(self, cond=lambda: False):
+
+
+
+        if self._app_info_fn != None and not self._suppress_print:
+
+            if self._collect_dataset_stats_flag:
+                self._training_dataset_pkl = self._app_info_fn.replace('.csv', '.pkl')
+
+                with open(self._training_dataset_pkl, 'wb') as fp:
+                    pass
+
+            with open(self._app_info_fn,'w') as fp:
+                fp.write("app_id,submit_time,start_time,end_time,estimated_start_time,estimated_end_time,fair_act,service,num_apps_seen_diff\n")
+
+
+
+
+        if self._estimator:
+
+
+
+            p_of_estimate = min(5000.0/len(self._app_list), 1.0)
+
+
+            if not ray.is_initialized():
+                if ray.__version__ == '2.0.0.dev0':
+                    ray.init(ignore_reinit_error=True, address="auto")
+                elif ray.__version__ == '2.10.0':
+                    ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+                else:
+                    print("Warning: Incompatible Ray version --- may result in erroneous behaviour")
+
+            self._sim_futures = list()
+
+        while len(self._event_queue) > 0 or self._closest_end_event:
+
+            event = self.__pick_min_event()
+
+            self.progress_active_apps(event.event_time)            
+            self._last_event_time = event.event_time
+
+
+            # self.report_progress(event)
+
+
+            if event.event_type == Event.APP_SUB:
+                self.handle_app_sub_event(event)
+            elif event.event_type == Event.JOB_END:
+                self.handle_job_end_event(event)
+
+
+            self.update_allocations(event.event_time)
+
+            self.update_end_events(event.event_time)
+
+            # ray changes here
+            # if event.event_type == Event.APP_SUB and self._estimate and np.random.uniform() < 1.2:
+            if event.event_type == Event.APP_SUB and self._estimator and random.uniform(0,1) < p_of_estimate:
+
+                if self._collect_dataset_stats_flag:
+                    self.collect_dataset_stats(self._app_list[event.app_id])
+                
+                ret = self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time)
+                if ret:
+                    self._sim_futures.append(ret)
+                
+
+            if cond():
+                break
+
+        # ray changes here
+        if self._estimator:
+
+
+            
+            if len(self._snap_shots) > 0:
+                self._sim_futures.append(multi_runner.remote(self._snap_shots))
+
+            batched_futures = ray.get(self._sim_futures)
+            futures = []
+            for b in batched_futures:
+                futures += b
+
+            total_tasks = len(futures)
+            finished_futures = list()
+            
+            while futures:
+                finished, futures = ray.wait(futures)
+                finished_futures += finished
+            
+            for future in finished_futures:            
+                app_id, estimated_start_time, estimated_end_time = ray.get(future)
+                self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
+                if self._verbosity == 4:
+                    print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
+            
+        self.log_apps()
+
+
+
+
+
+    '''
     def run(self, cond=lambda: False):
 
 
@@ -232,3 +336,4 @@ class AppThemisScheduler(AppGenericScheduler):
 
         self.log_apps()
     
+    '''
