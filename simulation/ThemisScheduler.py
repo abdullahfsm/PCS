@@ -131,6 +131,9 @@ class AppThemisScheduler(AppGenericScheduler):
 
             self._sim_futures = list()
 
+
+        print(self._event_queue)
+
         while len(self._event_queue) > 0 or self._closest_end_event:
 
             event = heappop(
