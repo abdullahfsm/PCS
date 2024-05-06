@@ -194,5 +194,8 @@ class AppThemisScheduler(AppGenericScheduler):
                     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
 
 
-        
+
+        print()
+        print(self._num_finished_apps)
+
         self.log_apps()
