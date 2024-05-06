@@ -129,7 +129,7 @@ class AppThemisScheduler(AppGenericScheduler):
 
 
 
-    '''
+
     def run(self, cond=lambda: False):
 
 
@@ -193,15 +193,10 @@ class AppThemisScheduler(AppGenericScheduler):
                     self._sim_futures.append(ret)
 
 
-
             print(f"AFTER: event_type: {event.event_type} len(event_queue): {len(self._event_queue)} self._closest_end_event: {self._closest_end_event} redivision_event: {self._redivision_event} len(active_apps): {len(self._active_apps)}")
             
             if cond():
                 break
-
-
-
-
 
         # ray changes here
         if self._estimator:
@@ -236,4 +231,3 @@ class AppThemisScheduler(AppGenericScheduler):
 
         self.log_apps()
     
-    '''
