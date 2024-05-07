@@ -340,13 +340,13 @@ def run_sim(args):
         scheduler = AppPrioScheduler(total_gpus=args.num_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    prio_func=lambda a: a.estimated_remaining_service/a.jobs[0].thrpt(a.demand),
+                                    prio_func=lambda a: a.estimated_remaining_service/(a.jobs[0].thrpt(a.demand) if len(a.jobs) == 1 else a.demand),
                                     app_info_fn=args.output_file)
     elif args.scheduling_policy == "SRSF":
         scheduler = AppPrioScheduler(total_gpus=args.num_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    prio_func=lambda a: a.demand * a.estimated_remaining_service/a.jobs[0].thrpt(a.demand),
+                                    prio_func=lambda a: a.demand * a.estimated_remaining_service/(a.jobs[0].thrpt(a.demand) if len(a.jobs) == 1 else a.demand),
                                     app_info_fn=args.output_file)
     elif args.scheduling_policy == "LAS":
         scheduler = AppPrioScheduler(total_gpus=args.num_gpus,
@@ -371,7 +371,7 @@ def run_sim(args):
         scheduler = AppThemisScheduler(total_gpus=args.num_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    quantum=10,
+                                    quantum=10 if args.workload == "gavel" else 600,
                                     app_info_fn=args.output_file)
     elif args.scheduling_policy == "AFS":
         scheduler = AppAFSScheduler(total_gpus=args.num_gpus,

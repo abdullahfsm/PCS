@@ -16,7 +16,7 @@ output_files=()
 # PCS configs
 for var in {jct,bal,pred,}
 do
-	output_file=PCS_"$trace"_"$var".csv
+	output_file=new_data/PCS_"$var"_"$trace"_result.csv
 	python3 testbed/run_experiment.py -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_testbed_"$trace"_"$var".pkl -trace trace_"$trace" -output_file "$output_file"
 	output_files+=("$output_file")
 	echo "$var" done
@@ -26,7 +26,7 @@ done
 # Other policies
 for policy in {FIFO,SRSF,AFS,THEMIS,}
 do
-	output_file="$policy"_"$trace".csv
+	output_file=new_data/"$policy"_"$trace"_result.csv
 	python3 testbed/run_experiment.py -scheduling_policy "$policy" -trace trace_"$trace" -output_file "$policy"_"$trace".csv
 	output_files+=("$output_file")
 	echo "$policy" done
