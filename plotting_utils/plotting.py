@@ -77,27 +77,36 @@ PARETO_COLORS = {
     "AFS": COLORS["red1"],
     "Tiresias": COLORS["blue1"],
     "TIRESIAS": COLORS["blue1"],
+    "SRSF": COLORS["blue1"],
     "Themis": COLORS["green1"],
+    "THEMIS": COLORS["green1"],
     "FIFO": COLORS["orange1"],
     "Max-Min": COLORS["purple1"],
     SYSTEM: COLORS["blue"],
     f"{SYSTEM}-JCT": COLORS["gray1"],
     f"{SYSTEM}-jct": COLORS["gray1"],
+    f"{SYSTEM}_jct": COLORS["gray1"],
     f"{SYSTEM}-bal": COLORS["gray2"],
+    f"{SYSTEM}_bal": COLORS["gray2"],
     f"{SYSTEM}-pred": COLORS["gray3"],
-    f"{SYSTEM}-jct": COLORS["gray1"],
-
+    f"{SYSTEM}_pred": COLORS["gray3"],
 }
 
 HATCHES = {
     "AFS": None,
     "Tiresias": None,
     "TIRESIAS": None,
+    "SRSF": None,
     "FIFO": None,
     "Themis": None,
+    "THEMIS": None,
     f"{SYSTEM}-JCT": None,
+    f"{SYSTEM}-jct": None,
+    f"{SYSTEM}_jct": None,
     f"{SYSTEM}-bal": None,  # "x" * 3,
-    f"{SYSTEM}-pred": None  # "o" * 3,
+    f"{SYSTEM}_bal": None,  # "x" * 3,
+    f"{SYSTEM}-pred": None,  # "o" * 3,
+    f"{SYSTEM}_pred": None,  # "o" * 3,
     # https://pythonmatplotlibtips.blogspot.com/2017/12/change-hatch-density-barplot-matplotlib-pyplot.html
 }
 
@@ -181,6 +190,14 @@ CDF_PLOT_INFO = {
     },
 
     "AFS": {"label": "AFS", "color": COLORS["red1"], "linestyle": "-", "marker": "+"},
+
+    "Themis": {
+        "label": "Themis",
+        "color": COLORS["green1"],
+        "linestyle": "-",
+        "marker": "^",
+    },
+
 
     "THEMIS": {
         "label": "Themis",
@@ -602,33 +619,33 @@ def plot_fig7():
     return plot_fig7a(), plot_fig7b()
     
 
-def plot_fig7a():
+def plot_fig7a(
+    data_file="avg_jct_results.csv",
+    ylabel="Norm. Avg JCT",
+    out_file="fig7a.pdf",
+    y_min=0,
+    y_limit=9,
+    legend=True,
+    yticks=[0, 2, 4, 6],
+    yticklabels=["0", "2", "4", "6"],
+    logscale=False,
+    xtick_labelsize=16,
+    max_y=6.5,
+    data=None
+):
     return _plot_fig7a(
-        "avg_jct_results.csv",
-        "Norm. Avg JCT",
-        "fig7a.pdf",
-        0,
-        9,
-        True,
-        [0, 2, 4, 6],
-        ["0", "2", "4", "6"],
-        xtick_labelsize=16,
-        max_y=6.5
-    )
-
-def plot_fig7b():
-    return _plot_fig7b(
-        "avg_error_results.csv",
-        "p99_error_results.csv",
-        "Pred Error %",
-        "fig7b.pdf",
-        0.8,
-        1000,
-        False,
-        logscale=True,
-        yticks=[1, 10, 100, 1000],
-        yticklabels=["0", "10", "$10^2$", "$10^3$"],
-        xtick_labelsize=16
+        data_file,
+        ylabel,
+        out_file,
+        y_min,
+        y_limit,
+        legend,
+        logscale=logscale,
+        yticks=yticks,
+        yticklabels=yticklabels,
+        xtick_labelsize=xtick_labelsize,
+        max_y=max_y,
+        data=data,
     )
 
 
@@ -643,9 +660,10 @@ def _plot_fig7a(
     yticklabels=None,
     logscale=False,
     xtick_labelsize=24,
-    max_y=float('inf')
+    max_y=float('inf'),
+    data=None
 ):
-    data_table = dl.get_trace_data(data_file)
+    data_table = data or dl.get_trace_data(data_file)
     x_labels = data_table["traces"]
     y = data_table["data"]
     bar_width = 0.02
@@ -731,6 +749,40 @@ def _plot_fig7a(
     return ax
 
 
+
+def plot_fig7b(
+    data_file1="avg_error_results.csv",
+    data_file2="p99_error_results.csv",
+    ylabel="Pred Error %",
+    out_file="fig7b.pdf",
+    y_min=0.8,
+    y_limit=1000,
+    legend=False,
+    yticks=[1, 10, 100, 1000],
+    yticklabels=["0", "10", "$10^2$", "$10^3$"],
+    logscale=True,
+    xtick_labelsize=16,
+    data1=None,
+    data2=None,
+):
+    return _plot_fig7b(
+        data_file1,
+        data_file2,
+        ylabel,
+        out_file,
+        y_min,
+        y_limit,
+        legend,
+        yticks=yticks,
+        yticklabels=yticklabels,
+        logscale=logscale,
+        xtick_labelsize=xtick_labelsize,
+        data1=data1,
+        data2=data2,
+    )
+
+
+
 def _plot_fig7b(
     data_file1,
     data_file2,
@@ -742,10 +794,12 @@ def _plot_fig7b(
     yticks=None,
     yticklabels=None,
     logscale=False,
-    xtick_labelsize=24
+    xtick_labelsize=24,
+    data1=None,
+    data2=None,
 ):
-    data_table = dl.get_trace_data(data_file1)
-    tail_data_table = dl.get_trace_data(data_file2)
+    data_table = data1 or dl.get_trace_data(data_file1)
+    tail_data_table = data2 or dl.get_trace_data(data_file2)
 
     x_labels = data_table["traces"]
     y = data_table["data"]

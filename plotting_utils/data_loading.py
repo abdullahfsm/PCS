@@ -90,6 +90,9 @@ def get_trace_data(table_file):
             if k != "FIFO":
                 new_data[k] = v
         new_data["FIFO"] = data["FIFO"]
+
+        print({"traces": traces, "data": new_data})
+
         return {"traces": traces, "data": new_data}
 
 

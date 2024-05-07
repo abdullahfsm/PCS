@@ -9,11 +9,35 @@ import numpy as np
 
 
 
-
-
-
-
 def main():
+	trace = "ee9e8c"
+	fname = "{}_{}_result.csv"
+	policy = "PCS_pred"
+
+	df = pd.read_csv(fname.format(policy, trace))
+
+	df['jct'] =  df['end_time'] - df['submit_time']
+	valid_prediction = (df['estimated_end_time'] == -1) & (df['estimated_start_time'] == -1)
+	# valid_prediction = df['estimated_end_time'] != -1
+
+	filtered_df = df.drop(df[valid_prediction].index)
+
+	filtered_df['pred_jct'] =  filtered_df['estimated_end_time'] - filtered_df['submit_time']
+	filtered_df['jct'] =  filtered_df['end_time'] - filtered_df['submit_time']
+
+	filtered_df['error'] = 100.0 * (filtered_df['pred_jct'] - filtered_df['jct']).abs() / filtered_df['pred_jct']
+
+	print(df['jct'].mean())
+	print(filtered_df['error'].mean())
+	print(filtered_df['error'].quantile(0.99))
+
+
+
+
+
+
+
+def main2():
 	fdir = "new/"
 
 	# seeds=[1954,3266,5897,6359,9005]
@@ -29,11 +53,22 @@ def main():
 	# Load the CSV file into a DataFrame
 	df = pd.read_csv(file_path)
 	df['jct'] =  df['end_time'] - df['submit_time']
-	df['pred_jct'] =  df['estimated_end_time'] - df['submit_time']
-	df['error'] = 100.0 * (df['pred_jct'] - df['jct']).abs() / df['pred_jct']
 
-	print(df['jct'].mean())
-	print(df['error'].quantile(0.99))
+
+	valid_prediction = df['estimated_end_time'] != -1 and df['start_time'] != -1
+	filtered_df = df[valid_prediction]
+
+	filtered_df['pred_jct'] =  filtered_df['estimated_end_time'] - filtered_df['submit_time']
+	filtered_df['jct'] =  filtered_df['end_time'] - filtered_df['submit_time']
+
+	filtered_df['error'] = 100.0 * (filtered_df['pred_jct'] - filtered_df['jct']).abs() / filtered_df['pred_jct']
+
+
+	print(df)
+	print(filtered_df)
+
+	# print(df['jct'].mean())
+	# print(filtered_df['error'].quantile(0.99))
 
 
 
@@ -136,4 +171,4 @@ def orig_main():
 
 if __name__ == '__main__':
 	main()
-	orig_main()
+	# orig_main()
