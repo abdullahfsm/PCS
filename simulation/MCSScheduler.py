@@ -1,17 +1,14 @@
+import os
 import sys
 import copy
-import numpy as np
-from heapq import heapify, heappop, heappush
-from fractions import Fraction as frac
 from datetime import datetime, timedelta
-import ray
 import math
-
-
-from common import Event, App, Job
+import random
+import ray
 from GenericScheduler import AppGenericScheduler
-
-# self, total_gpus, event_queue, app_list, suppress_print=False
+from GenericScheduler import multi_runner
+from common import Event, App, Job
+from fractions import Fraction as frac
 
 
 class AppMCScheduler(AppGenericScheduler):
@@ -323,7 +320,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
         self._class_rates = self._default_class_rates[:]
 
-        self._redivision_event_queue = list()
+        self._redivision_event = None
         self._quantum = quantum
         self._app_id_to_fractional_allocation = {}
         self._app_id_to_int_allocation = {}
@@ -504,39 +501,28 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
                 assert float(next_redivision) >= 0
 
-                self._redivision_event_queue = list()
-                # heappush(self._redivision_event_queue, Event(event_id=0, event_time=event.event_time + timedelta(seconds=float(next_redivision)), event_type="REDIVISION"))
-                heappush(
-                    self._redivision_event_queue,
-                    Event(
-                        event_id=0,
-                        event_time=event.event_time
-                        + timedelta(seconds=float(next_redivision)),
-                        event_type="REDIVISION",
-                    ),
-                )
-
-
+                self._redivision_event = Event(
+                    event_id=0,
+                    event_time=event.event_time
+                    + timedelta(seconds=float(next_redivision)),
+                    event_type="REDIVISION",
+                ),
 
 
     def __pick_min_event(self):
 
+        numbers = [self._closest_end_event, self._redivision_event]
+        lst = self._event_queue
 
-        if len(self._event_queue) == 0:
-            return self._closest_end_event
-        elif not self._closest_end_event:
-            return self._event_queue.pop()
-
-        new_event = self._event_queue.pop()
-
-        if new_event < self._closest_end_event:
-            return new_event
-
-        self._event_queue.append(new_event)
-        return self._closest_end_event
+        inf_event = Event(event_id=-1, event_time=datetime.max, event_type=Event.UNDEFINED)
 
 
+        numbers = [n if n else inf_event for n in numbers]
+        min_answer = min(min(numbers), lst[-1] if lst else inf_event)
 
+        if lst and min_answer.event_type == Event.APP_SUB:
+            lst.pop()
+        return min_answer
 
     def run(self, cond=lambda: False):
 
@@ -557,13 +543,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
 
         while len(self._event_queue) > 0 or self._closest_end_event:
-            event = heappop(
-                self.__pick_min_heap(
-                    
-                    [self.__pick_min_event()],
-                    self._redivision_event_queue,
-                )
-            )
+            event = self.__pick_min_event()
 
             self.progress_active_apps(event.event_time)
             self._last_event_time = event.event_time
