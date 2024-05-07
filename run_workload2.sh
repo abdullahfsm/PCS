@@ -22,7 +22,7 @@ do
 	for policy in {FIFO,SRSF,AFS,THEMIS,}
 	do
 		output_file=new_data/"$policy"_"$trace"_result.csv
-		python3 simulation/sim.py -scheduling_policy "$policy" -num_gpus 64 -output_file -output_file $output_file -trace trace_"$trace"
+		python3 simulation/sim.py -scheduling_policy "$policy" -num_gpus 64 -output_file $output_file -trace trace_"$trace"
 		output_files+=("$output_file")
 		echo "$policy" done
 	done

@@ -450,6 +450,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if args.trace and args.num_apps == -1:
+        args.num_apps = 100000000000
+
+
 
     run_sim(args)
 
