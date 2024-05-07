@@ -9,21 +9,21 @@ from fractions import Fraction as frac
 
 
 class_detail = {"num_classes": 3, "class_thresholds": [1627,969473,float('inf')], "class_rates": [frac(19,20),frac(6,125),frac(1,500)], "clip_demand_factor": 0.5980, "delta": 0.23536}
-file_name = "PCS_config_0e4951_avg_jct_avg_pred_error_jct.pkl"
+file_name = "PCS_config_0e4a51_avg_jct_avg_pred_error_jct.pkl"
 with open(file_name, "wb") as fp:
 	pickle.dump(class_detail, fp)
 
 
 
 class_detail = {"num_classes": 3, "class_thresholds": [2139,1533489,float('inf')], "class_rates": [frac(313,333),frac(19,333),frac(1,333)], "clip_demand_factor": 0.6326, "delta": 0.50166}
-file_name = "PCS_config_0e4951_avg_jct_avg_pred_error_bal.pkl"
+file_name = "PCS_config_0e4a51_avg_jct_avg_pred_error_bal.pkl"
 with open(file_name, "wb") as fp:
 	pickle.dump(class_detail, fp)
 
 
 
 class_detail = {"num_classes": 3, "class_thresholds": [5758,4600151,float('inf')], "class_rates": [frac(19,20),frac(6,125),frac(1,500)], "clip_demand_factor": 0.3185, "delta": 0.16764}
-file_name = "PCS_config_0e4951_avg_jct_avg_pred_error_pred.pkl"
+file_name = "PCS_config_0e4a51_avg_jct_avg_pred_error_pred.pkl"
 with open(file_name, "wb") as fp:
 	pickle.dump(class_detail, fp)
 
