@@ -82,8 +82,11 @@ PARETO_COLORS = {
     "Max-Min": COLORS["purple1"],
     SYSTEM: COLORS["blue"],
     f"{SYSTEM}-JCT": COLORS["gray1"],
+    f"{SYSTEM}-jct": COLORS["gray1"],
     f"{SYSTEM}-bal": COLORS["gray2"],
     f"{SYSTEM}-pred": COLORS["gray3"],
+    f"{SYSTEM}-jct": COLORS["gray1"],
+
 }
 
 HATCHES = {
@@ -111,6 +114,16 @@ CDF_PLOT_INFO = {
         "linestyle": "-",
         "marker": "o",
     },
+
+
+    "PCS_bal": {
+        "label": f"{SYSTEM}-bal",
+        # "color": COLORS["midblue"],
+        "color": COLORS["gray2"],
+        "linestyle": "-",
+        "marker": "o",
+    },
+
     "PCS-pred": {
         "label": f"{SYSTEM}-pred",
         # "color": COLORS["lightblue"],
@@ -118,7 +131,33 @@ CDF_PLOT_INFO = {
         "linestyle": "-",
         "marker": "o",
     },
+
+
+    "PCS_pred": {
+        "label": f"{SYSTEM}-pred",
+        # "color": COLORS["lightblue"],
+        "color": COLORS["gray3"],
+        "linestyle": "-",
+        "marker": "o",
+    },
+
     "PCS-JCT": {
+        "label": f"{SYSTEM}-JCT",
+        # "color": COLORS["blue"],
+        "color": COLORS["gray1"],
+        "linestyle": "-",
+        "marker": "o",
+    },
+
+    "PCS_jct": {
+        "label": f"{SYSTEM}-JCT",
+        # "color": COLORS["blue"],
+        "color": COLORS["gray1"],
+        "linestyle": "-",
+        "marker": "o",
+    },
+
+    "PCS-jct": {
         "label": f"{SYSTEM}-JCT",
         # "color": COLORS["blue"],
         "color": COLORS["gray1"],
@@ -132,6 +171,15 @@ CDF_PLOT_INFO = {
         "linestyle": "-",
         "marker": "^",
     },
+
+    "SRSF": {
+        "label": "Tiresias",
+        # "color": COLORS["pink"],
+        "color": COLORS["blue1"],
+        "linestyle": "-",
+        "marker": "^",
+    },
+
     "AFS": {"label": "AFS", "color": COLORS["red1"], "linestyle": "-", "marker": "+"},
 
     "THEMIS": {
@@ -799,8 +847,9 @@ def plot_fig8a(
     jct_font_size=28,
     scheduler_font_size=28,
     tick_font_size=28,
+    data=None,
 ):
-    data = dl.get_fig8a_data()
+    data = data or dl.get_fig8a_data()
     _, ax = plt.subplots(figsize=(8, 5))
 
     inter_bar_gap = 1.5
@@ -862,14 +911,15 @@ def plot_fig8b(
     marker_size=300,
     tick_font_size=28,
     point_font_size=28,
+    data=None,
 ):
-    points = dl.get_fig8b_data()
+    points = data or dl.get_fig8b_data()
     points = {CDF_PLOT_INFO[k]["label"]: v for k, v in points.items()}
     _, ax = plt.subplots(figsize=(8, 5))
     for label, point in points.items():
         if SYSTEM in label:
             ax.scatter(
-                point["mean_err_pred"],
+                point["p99_err_pred"],
                 point["normalized_mean_jct"],
                 marker=marker,
                 label=label,
@@ -878,7 +928,7 @@ def plot_fig8b(
             )
         elif label == "FIFO":
             ax.scatter(
-                point["mean_err_pred"],
+                point["p99_err_pred"],
                 point["normalized_mean_jct"],
                 marker=marker,
                 label=label,
@@ -889,7 +939,7 @@ def plot_fig8b(
             continue
         else:
             ax.scatter(
-                point["mean_err_pred"],
+                point["p99_err_pred"],
                 point["normalized_mean_jct"],
                 marker=marker,
                 label=label,
@@ -899,7 +949,7 @@ def plot_fig8b(
         if label == "AFS":
             ax.annotate(
                 label,
-                xy=(point["mean_err_pred"], point["normalized_mean_jct"]),
+                xy=(point["p99_err_pred"], point["normalized_mean_jct"]),
                 xytext=(-70, -10),
                 textcoords="offset points",
                 fontsize=point_font_size,
@@ -907,7 +957,7 @@ def plot_fig8b(
         elif label == "Tiresias":
             ax.annotate(
                 label,
-                xy=(point["mean_err_pred"], point["normalized_mean_jct"]),
+                xy=(point["p99_err_pred"], point["normalized_mean_jct"]),
                 xytext=(-50, 40),
                 textcoords="offset points",
                 fontsize=point_font_size,
@@ -924,7 +974,7 @@ def plot_fig8b(
         else:
             ax.annotate(
                 label,
-                xy=(point["mean_err_pred"], point["normalized_mean_jct"]),
+                xy=(point["p99_err_pred"], point["normalized_mean_jct"]),
                 xytext=(10, -7),
                 textcoords="offset points",
                 fontsize=point_font_size,

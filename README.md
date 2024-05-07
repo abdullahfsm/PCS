@@ -32,6 +32,11 @@
 * Run `bash run_workload2.sh`
 
 
+## Reproducing Figure 8 Data
+* Run `bash run_workload3.sh`
+* Once the script finishes, you can use `figure8_plot.ipynb` to analyze and plot figure 8a,8b
+
+
 ## Running Simulation 
 
 * Run `python3 reproduce.py -h` to see which traces and workloads are acceptable for correct usage. 

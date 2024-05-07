@@ -110,7 +110,7 @@ def get_fig8b_data():
     order = [e["policy"] for e in data]
     output = dict()
     for i, e in enumerate(order):
-        output[e] = {"mean_err_pred": data[i]["X"], "normalized_mean_jct": data[i]["Y"]}
+        output[e] = {"p99_err_pred": data[i]["X"], "normalized_mean_jct": data[i]["Y"]}
     return output
 
 
