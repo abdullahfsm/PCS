@@ -65,6 +65,10 @@ def setup_keys():
 
 def configure_ray(exclude_head=False):
 
+
+    run_on_nodes("conda activate osdi24; cd ~/PCS/utils; python3 ray_patch/python/ray/setup-dev.py -y")
+    return
+
     nodes_to_configure = list_of_nodes[1:] if exclude_head else list_of_nodes[:]
 
     threads = list()
