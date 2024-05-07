@@ -2,7 +2,7 @@
 
 output_files=()
 
-for trace in {0e4a51,}
+for trace in {ee9e8c,}
 # for trace in {0e4a51,6214e9,6c71a0,b436b2}
 do
 	for metric in {avg_jct_avg_pred_error,}
