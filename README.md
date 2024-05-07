@@ -30,7 +30,7 @@
 
 ## Reproducing Figure 7 Data
 * Run `bash run_workload2.sh`
-
+* Once the script finishes, you can use `figure9_plot.ipynb` to analyze and plot figure 7a,7b
 
 ## Reproducing Figure 8 Data
 * Run `bash run_workload3.sh`
