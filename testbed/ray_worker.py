@@ -28,6 +28,8 @@ from ray.util.queue import Queue
 
 from common import Event
 
+from time import sleep
+
 
 CHECKPOINT_FILENAME="my_model.keras"
 
@@ -244,7 +246,8 @@ def example_resources_allocation_function(
     #     min_cpu,
     #     total_available_cpus // len(trial_runner.get_live_trials()))
     # Assign new CPUs to the trial in a PlacementGroupFactory
-    return PlacementGroupFactory([{"CPU": 1, "GPU": total_available_gpus//len(trial_runner.get_live_trials())}])
+    return PlacementGroupFactory([{"CPU": 1, "GPU": 1}])
+    # return PlacementGroupFactory([{"CPU": 1, "GPU": total_available_gpus//len(trial_runner.get_live_trials())}])
 
 
 
@@ -278,6 +281,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
         event_queue = Queue(),
         event_creator=Event,
         inactivity_time=1440,
+        checkpoint_at_end=False,
         )
         # time_budget_s=budget)
 
@@ -297,5 +301,10 @@ if __name__ == '__main__':
     parser.add_argument("--budget", type=float, default=5.0)
     args = parser.parse_args()
 
+
+    os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
+
     ray.init(address="auto")
     tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget)
+
+    sleep(2)
