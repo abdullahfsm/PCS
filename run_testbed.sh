@@ -27,7 +27,7 @@ done
 for policy in {FIFO,SRSF,AFS,THEMIS,}
 do
 	output_file=new_data/"$policy"_"$trace"_result.csv
-	python3 testbed/run_experiment.py -scheduling_policy "$policy" -trace trace_"$trace" -output_file "$policy"_"$trace".csv
+	python3 testbed/run_experiment.py -scheduling_policy "$policy" -trace trace_"$trace" -output_file "$output_file"
 	output_files+=("$output_file")
 	echo "$policy" done
 done
