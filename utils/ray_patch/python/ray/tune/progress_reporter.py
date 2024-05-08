@@ -517,13 +517,7 @@ class CLIReporter(TuneReporterBase):
             sort_by_metric)
 
     def report(self, trials: List[Trial], done: bool, *sys_info: Dict):
-
-
-        prog_str = self._progress_str(trials, done, *sys_info)
-
-        print(prog_str)
-        return prog_str
-
+        print(self._progress_str(trials, done, *sys_info))
 
 
 def memory_debug_str():
@@ -676,7 +670,7 @@ def trial_progress_table(
             key=lambda t: t.last_result[metric])
 
     state_tbl_order = [
-        Trial.RUNNING, Trial.PAUSED, Trial.PENDING, Trial.PREEMPTED, Trial.TERMINATED,
+        Trial.RUNNING, Trial.PAUSED, Trial.PENDING, Trial.TERMINATED,
         Trial.ERROR
     ]
     max_rows = max_rows or float("inf")
@@ -903,13 +897,11 @@ class TrialProgressCallback(Callback):
 
     def on_trial_result(self, iteration: int, trials: List["Trial"],
                         trial: "Trial", result: Dict, **info):
-        # self.log_result(trial, result, error=False)
-        pass
+        self.log_result(trial, result, error=False)
 
     def on_trial_error(self, iteration: int, trials: List["Trial"],
                        trial: "Trial", **info):
-        # self.log_result(trial, trial.last_result, error=True)
-        pass
+        self.log_result(trial, trial.last_result, error=True)
 
     def on_trial_complete(self, iteration: int, trials: List["Trial"],
                           trial: "Trial", **info):
@@ -921,8 +913,7 @@ class TrialProgressCallback(Callback):
             last_result_str = self._last_result_str.get(trial, "")
             # If this is a new result, print full result string
             if print_result_str != last_result_str:
-                # self.log_result(trial, trial.last_result, error=False)
-                pass
+                self.log_result(trial, trial.last_result, error=False)
             else:
                 print(f"Trial {trial} completed. "
                       f"Last result: {print_result_str}")

@@ -101,11 +101,6 @@ class _ExperimentCheckpointManager:
         if not self._checkpoint_dir:
             return
 
-
-
-        
-
-
         now = time.time()
         if now - self._last_checkpoint_time < self._checkpoint_period and (
                 not force):
@@ -136,9 +131,6 @@ class _ExperimentCheckpointManager:
         else:
             self._syncer.sync_up_if_needed()
         checkpoint_time_taken = time.monotonic() - checkpoint_time_start
-
-
-
 
         if self._auto_checkpoint_enabled:
             # Multiplying this time by 19 means we spend ~5% of the time
@@ -222,29 +214,11 @@ class TrialRunner:
                  checkpoint_period=None,
                  trial_executor=None,
                  callbacks=None,
-                 metric=None,
-                 event_queue = None,
-                 event_creator=None,
-                 name=None,
-                 scheduler_trial_runner_queue=None,
-                 inactivity_time=None):
-
-        self._name = name
+                 metric=None):
         self._search_alg = search_alg or BasicVariantGenerator()
         self._scheduler_alg = scheduler or FIFOScheduler()
         self.trial_executor = trial_executor or RayTrialExecutor()
         self._pending_trial_queue_times = {}
-
-        # ABD: added
-        self._event_creator = event_creator
-        self._event_queue = event_queue
-        self._scheduler_trial_runner_queue = scheduler_trial_runner_queue
-        self._preempted_trials = set()
-        self._previous_status_dict = {}
-        self._allowed_concurrency = 1000
-        self._last_ping = datetime.now()
-        self._inactivity_time=inactivity_time
-        self._init_time = datetime.now()
 
         # Set the number of maximum pending trials
         max_pending_trials = os.getenv("TUNE_MAX_PENDING_TRIALS_PG", "auto")
@@ -562,7 +536,6 @@ class TrialRunner:
         Args:
             force (bool): Forces a checkpoint despite checkpoint_period.
         """
-
         with warn_if_slow(
                 "experiment_checkpoint",
                 message="Checkpointing the experiment state took "
@@ -574,19 +547,12 @@ class TrialRunner:
                 "training loop.",
                 disable=self._checkpoint_manager.auto_checkpoint_enabled):
 
-
-            # logger.info('DEBUG: in runners checkpoint above')
-
-
-
-            
             self._checkpoint_manager.checkpoint(
                 checkpoint_file=self.checkpoint_file,
                 trial_runner=self,
                 trial_executor=self.trial_executor,
                 search_alg=self._search_alg,
                 force=force)
-        
 
     def resume(self, run_errored_only=False):
         """Resumes all checkpointed trials from previous run.
@@ -653,123 +619,12 @@ class TrialRunner:
                                                      for trial in self._trials)
         return trials_done and self._search_alg.is_finished()
 
-    def debug_msg(self, msg):
-        return
-        fname = "/users/abdffsm/%s" % self._name
-        with open(fname, 'a') as fp:
-            fp.write(f"{msg}\n")
-        # fp.write(f"time: {cur_time} elapsed_time: {elapsed_time} {msg}\n")
-
-        # fp.write(f"time: {} allowed_concurrency: {self._allowed_concurrency} current_concurrency: {current_concurrency} entering blocking func..\n")
-
-
-
-
-    def concurrency_manager(self):
-
-
-        if self._scheduler_trial_runner_queue == None:
-            return -1
-
-
-        # fetch updated current concurrency
-        if self._scheduler_trial_runner_queue != None:
-            
-            num_gets = len(self._scheduler_trial_runner_queue["downlink"])
-            for _ in range(num_gets):
-                self._allowed_concurrency = self._scheduler_trial_runner_queue["downlink"].get()
-
-
-        if self._allowed_concurrency == -1:
-            self.debug_msg("stopping_experiment")
-            self.request_stop_experiment()
-            self._stop_experiment_if_needed()
-            return -1
-
-
-        current_concurrency = 0
-        for trial in self._live_trials:
-            if trial.status == Trial.RUNNING or trial.status == Trial.PENDING:
-            # if trial.status == Trial.RUNNING:
-                current_concurrency += 1
-                
-
-        old_preemption_length = len(self._preempted_trials)
-
-
-        self.debug_msg(f"allowed_concurrency: {self._allowed_concurrency} current_concurrency: {current_concurrency}")
-
-        # stop
-        if current_concurrency > self._allowed_concurrency:
-            for trial in self._live_trials:
-                # if trial.status != Trial.PAUSED and trial.status != Trial.PREEMPTED:
-                if trial.status == Trial.RUNNING or trial.status == Trial.PENDING:
-                # if trial.status == Trial.RUNNING:
-                    self._preempted_trials.add(trial)
-                    self._queued_trial_decisions[trial.trial_id] = TrialScheduler.PAUSE_YEILD
-                    self.trial_executor.set_status(trial, Trial.PREEMPTED)
-
-
-                    # logger.info('++++++++++DEBUG: preempting trial: %s++++++++++' % str(trial))
-
-
-                    current_concurrency -= 1
-
-                    if current_concurrency == self._allowed_concurrency:
-                        break
-
-        # resume
-        elif current_concurrency < self._allowed_concurrency:
-            to_resume = min(self._allowed_concurrency - current_concurrency, len(self._preempted_trials))
-
-            for _ in range(to_resume):
-                trial = self._preempted_trials.pop()
-                # ret = False
-                self.trial_executor.set_status(trial, Trial.PAUSED)
-                self.trial_executor.unpause_trial(trial)
-                self.debug_msg(f"unpausing trial {trial}. status: {trial.status}")
-
-                self._scheduler_alg.on_trial_unpause(self, trial)
-                self._queued_trial_decisions[trial.trial_id] = TrialScheduler.CONTINUE
-
-
-                # logger.info('++++++++++DEBUG: resuming trial: %s trial.status: %s++++++++++' % (str(trial), trial.status))
-
-
-                current_concurrency += 1
-
-        new_preemption_length = len(self._preempted_trials)
-
-
-        '''
-        if old_preemption_length != new_preemption_length:
-
-            print("new current_concurrency: %d" % current_concurrency)
-            print("allowed_concurrency: %d" % self._allowed_concurrency)
-            if new_preemption_length > old_preemption_length:
-                print("preempted %d trials" % (new_preemption_length  - old_preemption_length))
-            elif old_preemption_length > new_preemption_length:
-                print("released %d trials" % (old_preemption_length  - new_preemption_length))
-        '''
-
-        self.debug_msg(f"allowed_concurrency: {self._allowed_concurrency} updated_concurrency: {current_concurrency}")
-        return current_concurrency
-
-
     def step(self):
         """Runs one step of the trial event loop.
 
         Callers should typically run this method repeatedly in a loop. They
         may inspect or modify the runner's state in between calls to step().
         """
-        cur_time = datetime.now()
-        elapsed_time = (cur_time - self._init_time).total_seconds()
-
-        self.debug_msg(f"time: {cur_time} elapsed_time: {elapsed_time} step {self._iteration} starting..")
-
-        self.concurrency_manager()
-
-
         self._updated_queue = False
 
         if self.is_finished():
@@ -781,11 +636,6 @@ class TrialRunner:
                 iteration=self._iteration, trials=self._trials)
 
         # This will contain the next trial to start
-
-
-        self.debug_msg("getting next_trial..")
-
-
         next_trial = self._get_next_trial()  # blocking
 
         # Create pending trials. If the queue was updated before, only
@@ -798,8 +648,6 @@ class TrialRunner:
                     break
                 num_pending_trials += 1
 
-        self.debug_msg("staging and updating status..")
-
         # Update status of staged placement groups
         self.trial_executor.stage_and_update_status(self._live_trials)
 
@@ -807,24 +655,12 @@ class TrialRunner:
             """Helper function to start trial and call callbacks"""
             with warn_if_slow("start_trial"):
                 if self.trial_executor.start_trial(trial):
-
-                    
-                    app_id = int(self._name.split("app_")[-1])
-                    job_id = int(trial.trial_id.split("_")[-1])
-                    
-                    self._event_queue.put(self._event_creator(event_id=app_id, event_type=self._event_creator.JOB_START, event_time=datetime.now(), app_id=app_id, job_id=job_id))
-
                     self._callbacks.on_trial_start(
                         iteration=self._iteration,
                         trials=self._trials,
                         trial=trial)
                     return True
-                self.debug_msg(f"failed to _start_trial on trial {trial}")
-                self.debug_msg(f"trial.runner: {trial.runner}")
                 return False
-
-        if next_trial is not None:
-            self.debug_msg(f"next_trial is not None: {next_trial is not None} and next_trial: {next_trial} status: {next_trial.status}")
 
         may_handle_events = True
         if next_trial is not None:
@@ -839,24 +675,17 @@ class TrialRunner:
                     if _start_trial(next_trial):
                         may_handle_events = False
 
-
         if may_handle_events:
             if self.trial_executor.get_running_trials():
                 timeout = self._result_wait_time
                 if self.trial_executor.in_staging_grace_period():
                     timeout = 0.1
-                
-                self.debug_msg("entering process_events..")
                 self._process_events(timeout=timeout)
-                self.debug_msg("exiting process_events..")
             else:
-                self.debug_msg("self.trial_executor.on_no_available_trials called")
                 self._run_and_catch(self.trial_executor.on_no_available_trials)
 
-        self.debug_msg("checking if expt needs to be stopped..")
         self._stop_experiment_if_needed()
-        self.debug_msg("expt doesn't need to be stopped..")
-        
+
         try:
             self.checkpoint()
         except Exception as e:
@@ -875,29 +704,7 @@ class TrialRunner:
             self._callbacks.on_step_end(
                 iteration=self._iteration, trials=self._trials)
 
-        self.debug_msg("reconciling_live_trials..")
         self._reconcile_live_trials()
-        
-        self.debug_msg("checking_to_see ping..")
-
-        # add pinging event (every 30 sec) here
-        if (datetime.now() - self._last_ping).total_seconds() > (self._inactivity_time/4.0):
-            app_id = int(self._name.split("app_")[-1])
-            self._event_queue.put(self._event_creator(event_id=app_id, event_type="APP_PING", event_time=datetime.now(), app_id=app_id))
-            self._last_ping = datetime.now()
-            self.debug_msg("sending ping..")
-        
-
-        if self._scheduler_trial_runner_queue != None:
-
-            estimated_times = self._scheduler_alg.estimate_remaining_trial_times()
-            self._scheduler_trial_runner_queue["uplink"].put(estimated_times)
-
-
-        self.debug_msg(f"step: {self._iteration-1} ending")
-        self.debug_msg("===================================")
-
-
 
     def get_trial(self, tid):
         trial = [t for t in self._trials if t.trial_id == tid]
@@ -925,7 +732,6 @@ class TrialRunner:
         self._trials.append(trial)
         if trial.status != Trial.TERMINATED:
             self._live_trials.add(trial)
-
         with warn_if_slow("scheduler.on_trial_add"):
             self._scheduler_alg.on_trial_add(self, trial)
         self.trial_executor.try_checkpoint_metadata(trial)
@@ -982,9 +788,6 @@ class TrialRunner:
         return trial
 
     def _process_events(self, timeout: Optional[float] = None):
-
-        self.debug_msg("in _process_events")
-        
         with warn_if_slow("get_next_failed_trial"):
             failed_trial = self.trial_executor.get_next_failed_trial()
         if failed_trial:
@@ -997,14 +800,8 @@ class TrialRunner:
         else:
             # TODO(ujvl): Consider combining get_next_available_trial and
             #  fetch_result functionality so that we don't timeout on fetch.
-
-            self.debug_msg(f"\t trying to fetch next available_trial. timeout: {timeout}")
             trial = self.trial_executor.get_next_available_trial(
                 timeout=timeout)  # blocking
-            self.debug_msg(f"\t {trial} found")
-
-
-
             if not trial:
                 return
             if trial.is_restoring:
@@ -1041,26 +838,15 @@ class TrialRunner:
 
             else:
                 with warn_if_slow("process_trial"):
-                    self.debug_msg("\t entering _process_trial")
                     self._process_trial(trial)
-                    self.debug_msg("\t exiting _process_trial")
 
             # `self._queued_trial_decisions` now contains a final decision
             # based on all results
             if trial not in self._cached_trial_decisions:
                 final_decision = self._queued_trial_decisions.pop(
                     trial.trial_id, None)
-                # here
-
-                
-
-                self.debug_msg(f"\t {trial} final decision is: {final_decision} trial.status: {trial.status}")
-                self.debug_msg(f"\t is {trial} in trial_executor._running? {(self.trial_executor._find_item(self.trial_executor._running, trial))}")
-                self.debug_msg(f"\t is {trial} in trial_executor._paused? {(self.trial_executor._find_item(self.trial_executor._paused, trial))}")
-
-                if final_decision and trial.status != Trial.PENDING:
+                if final_decision:
                     self._execute_action(trial, final_decision)
-        self.debug_msg("exiting _process_events")
 
     def _process_trial(self, trial):
         """Processes a trial result.
@@ -1140,15 +926,6 @@ class TrialRunner:
             result.update(done=True)
 
             # Hook into scheduler
-            # add job_stop_here
-            app_id = int(self._name.split("app_")[-1])
-            job_id = int(trial.trial_id.split("_")[-1])
-            # logger.info("app_id: %d" % app_id)
-
-
-
-            self._event_queue.put(self._event_creator(event_id=app_id, event_type=self._event_creator.JOB_END, event_time=datetime.now(), app_id=app_id, job_id=job_id))
-
             self._scheduler_alg.on_trial_complete(self, trial, flat_result)
             self._search_alg.on_trial_complete(
                 trial.trial_id, result=flat_result)
@@ -1169,10 +946,6 @@ class TrialRunner:
             with warn_if_slow("scheduler.on_trial_result"):
                 decision = self._scheduler_alg.on_trial_result(
                     self, trial, flat_result)
-
-                # adding job_elapsed_time interface uplink support
-                # getting then adding insures the recent most remaining_time is put
-
             if decision == TrialScheduler.STOP:
                 result.update(done=True)
             with warn_if_slow("search_alg.on_trial_result"):
@@ -1278,8 +1051,7 @@ class TrialRunner:
         Args:
             trial (Trial): Trial being saved.
         """
-    
-
+        logger.debug("Trial %s: Processing trial save.", trial)
         checkpoint_value = None
 
         try:
@@ -1367,7 +1139,7 @@ class TrialRunner:
         # The old decision wasn't STOP. We update the decision only if it is
         # STOP or PAUSE. The action will only be CONTINUE if it was set by
         # the first received result and was never updated after that.
-        if decision is TrialScheduler.STOP or decision is TrialScheduler.PAUSE or decision is TrialScheduler.PAUSE_YEILD:
+        if decision is TrialScheduler.STOP or decision is TrialScheduler.PAUSE:
             self._queued_trial_decisions[trial.trial_id] = decision
 
     def _execute_action(self, trial, decision):
@@ -1381,20 +1153,9 @@ class TrialRunner:
             self.trial_executor.continue_training(trial)
         elif decision == TrialScheduler.PAUSE:
             self.trial_executor.pause_trial(trial)
-
-            # added callback to notify schheduler that trial has paused
-            self._scheduler_alg.on_trial_pause(self, trial)
-
-        elif decision == TrialScheduler.PAUSE_YEILD:
-            self.trial_executor.pause_trial(trial, return_resources=True)
         elif decision == TrialScheduler.STOP:
             self.trial_executor.export_trial_if_needed(trial)
-
-            # ABD: Pause and stop trial
-            self.trial_executor.pause_trial(trial)
-            self.stop_trial(trial)
-
-            # self.trial_executor.stop_trial(trial)
+            self.trial_executor.stop_trial(trial)
         else:
             raise ValueError("Invalid decision: {}".format(decision))
 
@@ -1471,9 +1232,6 @@ class TrialRunner:
         self._trials.append(trial)
         self._live_trials.add(trial)
 
-
-
-
         with warn_if_slow("scheduler.on_trial_add"):
             self._scheduler_alg.on_trial_add(self, trial)
 
@@ -1522,7 +1280,6 @@ class TrialRunner:
             t = self._stop_queue.pop()
             self.stop_trial(t)
 
-    # check here
     def stop_trial(self, trial):
         """Stops trial.
 
@@ -1538,7 +1295,6 @@ class TrialRunner:
         if trial.status in [Trial.ERROR, Trial.TERMINATED]:
             return
         elif trial.status in [Trial.PENDING, Trial.PAUSED]:
-
             self._scheduler_alg.on_trial_remove(self, trial)
             self._search_alg.on_trial_complete(trial.trial_id)
             self._callbacks.on_trial_complete(
@@ -1548,7 +1304,6 @@ class TrialRunner:
                 results = self.trial_executor.fetch_result(trial)
                 result = results[-1]
                 trial.update_last_result(result, terminate=True)
-
                 self._scheduler_alg.on_trial_complete(self, trial, result)
                 self._search_alg.on_trial_complete(
                     trial.trial_id, result=result)
@@ -1566,22 +1321,8 @@ class TrialRunner:
                     trials=self._trials,
                     trial=trial)
                 error = True
-
-
-    
-
         self.trial_executor.stop_trial(trial, error=error, error_msg=error_msg)
         self._live_trials.discard(trial)
-
-        # ABD added: need to discard stopped trials from preempted_trials.
-        # Not using remove here because trial maybe in live trials
-        self._preempted_trials.discard(trial)
-        
-
-        app_id = int(self._name.split("app_")[-1])
-        job_id = int(trial.trial_id.split("_")[-1])
-        self._event_queue.put(self._event_creator(event_id=app_id, event_type=self._event_creator.JOB_END, event_time=datetime.now(), app_id=app_id, job_id=job_id))
-
 
     def cleanup_trials(self):
         self._run_and_catch(self.trial_executor.cleanup)
@@ -1597,7 +1338,6 @@ class TrialRunner:
             # Only for TERMINATED trials. ERRORed trials might be retried.
             if trial.status == Trial.TERMINATED:
                 self._live_trials.remove(trial)
-                self._preempted_trials.remove(trial)
 
     def __getstate__(self):
         """Gets state for trial.

@@ -1,7 +1,6 @@
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Type, \
     Union
 
-
 import datetime
 import logging
 import os
@@ -54,7 +53,7 @@ def _check_default_resources_override(run_identifier):
         Trainable.default_resource_request.__code__)
 
 
-def _report_progress(runner, reporter, done=False, fname=None):
+def _report_progress(runner, reporter, done=False):
     """Reports experiment progress.
 
     Args:
@@ -66,15 +65,7 @@ def _report_progress(runner, reporter, done=False, fname=None):
     if reporter.should_report(trials, done=done):
         sched_debug_str = runner.scheduler_alg.debug_string()
         executor_debug_str = runner.trial_executor.debug_string()
-
-        prog_str = reporter._progress_str(trials, done, sched_debug_str, executor_debug_str)
-
-        # prog_str = reporter.report(trials, done, sched_debug_str, executor_debug_str)
-        
-        if fname != None:
-            with open(fname, 'a') as fp:
-                fp.write("%s\n" % prog_str)
-            
+        reporter.report(trials, done, sched_debug_str, executor_debug_str)
 
 
 @PublicAPI
@@ -118,11 +109,6 @@ def run(
         # Deprecated args
         loggers: Optional[Sequence[Type[Logger]]] = None,
         _remote: bool = None,
-        event_queue = None,
-        event_creator=None,
-        scheduler_trial_runner_queue=None,
-        inactivity_time=None
-
 ) -> ExperimentAnalysis:
     """Executes training.
 
@@ -548,13 +534,7 @@ def run(
         fail_fast=fail_fast,
         trial_executor=trial_executor,
         callbacks=callbacks,
-        metric=metric,
-        event_queue=event_queue,
-        event_creator=event_creator,
-        name=name,
-        scheduler_trial_runner_queue=scheduler_trial_runner_queue,
-        inactivity_time=inactivity_time)
-
+        metric=metric)
 
     if not runner.resumed:
         for exp in experiments:
@@ -615,24 +595,10 @@ def run(
 
     tune_start = time.time()
     progress_reporter.set_start_time(tune_start)
-
-    # indicating start of an app
-    app_id = int(name.split("app_")[-1])
-    event_queue.put(event_creator(event_id=app_id, event_type=event_creator.APP_START, event_time=datetime.datetime.now(), app_id=app_id))
-
-    
-    '''
-    fname = "/users/abdffsm/%s" % name
-    with open(fname, 'w') as fp:
-        fp.write("starting app_id: %d\n" % app_id)
-    '''
-    
     while not runner.is_finished() and not state[signal.SIGINT]:
         runner.step()
         if has_verbosity(Verbosity.V1_EXPERIMENT):
-            _report_progress(runner, progress_reporter, fname=None)
-            pass
-
+            _report_progress(runner, progress_reporter)
     tune_taken = time.time() - tune_start
 
     try:
@@ -641,8 +607,7 @@ def run(
         logger.warning(f"Trial Runner checkpointing failed: {str(e)}")
 
     if has_verbosity(Verbosity.V1_EXPERIMENT):
-        _report_progress(runner, progress_reporter, fname=None)
-        pass
+        _report_progress(runner, progress_reporter, done=True)
 
     wait_for_sync()
     runner.cleanup()
@@ -670,10 +635,6 @@ def run(
             "`resume=True` to `tune.run()`")
 
     trials = runner.get_trials()
-
-    app_id = int(name.split("app_")[-1])
-    event_queue.put(event_creator(event_id=app_id, event_type=event_creator.APP_END, event_time=datetime.datetime.now(), app_id=app_id))
-
     return ExperimentAnalysis(
         runner.checkpoint_file,
         trials=trials,

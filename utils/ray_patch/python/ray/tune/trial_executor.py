@@ -198,7 +198,6 @@ class TrialExecutor(metaclass=ABCMeta):
     def stop_trial(self,
                    trial: Trial,
                    error: bool = False,
-                   return_resources=False,
                    error_msg: Optional[str] = None,
                    destroy_pg_if_cannot_replace: bool = True) -> None:
         """Stops the trial.
@@ -220,34 +219,17 @@ class TrialExecutor(metaclass=ABCMeta):
         """Continues the training of this trial."""
         pass
 
-    def pause_trial(self, trial: Trial, return_resources=False) -> None:
+    def pause_trial(self, trial: Trial) -> None:
         """Pauses the trial.
 
         We want to release resources (specifically GPUs) when pausing an
         experiment. This results in PAUSED state that similar to TERMINATED.
         """
-
-
-        assert trial.status == Trial.RUNNING or trial.status == Trial.PREEMPTED, trial.status
-
-
+        assert trial.status == Trial.RUNNING, trial.status
         try:
             self.save(trial, Checkpoint.MEMORY)
-            # ABD: see if returning resources is necessary
-            self.stop_trial(trial, return_resources=return_resources)
-
-            if not (return_resources):
-                self.set_status(trial, Trial.PAUSED)
-            else:
-                self.set_status(trial, Trial.PREEMPTED)
-                # self.
-
-
-            logger.info("+++++++++++++++++DEBUG: trial.trial_id: %s, trial.status: %s+++++++++++++++++" % (trial.trial_id, trial.status))
-
-
-
-
+            self.stop_trial(trial)
+            self.set_status(trial, Trial.PAUSED)
         except Exception:
             logger.exception("Error pausing runner.")
             self.set_status(trial, Trial.ERROR)
@@ -257,16 +239,10 @@ class TrialExecutor(metaclass=ABCMeta):
         assert trial.status == Trial.PAUSED, trial.status
         self.set_status(trial, Trial.PENDING)
 
-    def unpreempt_trial(self, trial: Trial) -> None:
-        assert trial.status == Trial.PREEMPTED, trial.status
-        self.set_status(trial, Trial.PAUSED)
-        return self.resume_trial(trial)
-
-
-    def resume_trial(self, trial: Trial) -> bool:
+    def resume_trial(self, trial: Trial) -> None:
         """Resumes PAUSED trials. This is a blocking call."""
         assert trial.status == Trial.PAUSED, trial.status
-        return self.start_trial(trial)
+        self.start_trial(trial)
 
     @abstractmethod
     def reset_trial(self, trial: Trial, new_config: Dict,

@@ -220,8 +220,6 @@ class Trial:
     PAUSED = "PAUSED"
     TERMINATED = "TERMINATED"
     ERROR = "ERROR"
-    PREEMPTED = "PREEMPTED"
-
 
     def __init__(self,
                  trainable_name,

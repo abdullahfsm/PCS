@@ -420,8 +420,7 @@ class FunctionRunner(Trainable):
         state = self.get_state()
 
         if not checkpoint:
-            # ABDULLAH: important modification. checkpoint should be there technically.
-            # state.update(iteration=0, timesteps_total=0, episodes_total=0)
+            state.update(iteration=0, timesteps_total=0, episodes_total=0)
             # We drop a marker here to indicate that the checkpoint is empty
             checkpoint = FuncCheckpointUtil.mk_null_checkpoint_dir(self.logdir)
             parent_dir = checkpoint

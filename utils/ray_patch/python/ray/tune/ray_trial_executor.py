@@ -175,13 +175,6 @@ class RayTrialExecutor(TrialExecutor):
                  refresh_period: Optional[float] = None,
                  wait_for_placement_group: Optional[float] = None):
         super(RayTrialExecutor, self).__init__(queue_trials)
-
-
-
-        # ABD: adding max_GPU_allocation
-        self._max_GPU = 1000
-
-
         # Check for if we are launching a trial without resources in kick off
         # autoscaler.
         self._trial_queued = False
@@ -240,11 +233,6 @@ class RayTrialExecutor(TrialExecutor):
 
         if ray.is_initialized():
             self._update_avail_resources()
-
-
-
-    def set_max_GPU(self, max_GPU: int) -> None:
-        self._max_GPU = max_GPU
 
     def in_staging_grace_period(self) -> bool:
         """Returns True if trials have recently been staged."""
@@ -417,8 +405,6 @@ class RayTrialExecutor(TrialExecutor):
     def _train(self, trial):
         """Start one iteration of training and save remote id."""
         if self._find_item(self._paused, trial):
-
-
             raise TuneError(
                 "Should not call `train` on PAUSED trial {}. "
                 "This is an internal error - please file an issue "
@@ -433,10 +419,7 @@ class RayTrialExecutor(TrialExecutor):
                     str(trial)))
             return
 
-        if trial.status != Trial.RUNNING:
-            logger.info(f"trial: {trial} status: {trial.status}")
         assert trial.status == Trial.RUNNING, trial.status
-        
         buffer_time_s = max(
             self._buffer_min_time_s,
             min(self._buffer_max_time_s,
@@ -499,10 +482,6 @@ class RayTrialExecutor(TrialExecutor):
         """
         prior_status = trial.status
         self.set_status(trial, Trial.PENDING)
-        
-        # added
-        runner = trial.runner
-
         if runner is None:
             runner = self._setup_remote_runner(trial)
             if not runner:
@@ -516,9 +495,7 @@ class RayTrialExecutor(TrialExecutor):
             self._staged_trials.remove(trial)
 
         previous_run = self._find_item(self._paused, trial)
-
-        # if prior_status == Trial.PAUSED and previous_run:
-        if (prior_status == Trial.PAUSED or prior_status == Trial.PREEMPTED) and previous_run:
+        if prior_status == Trial.PAUSED and previous_run:
             # If Trial was in flight when paused, self._paused stores result.
             self._paused.pop(previous_run[0])
             self._running[previous_run[0]] = trial
@@ -563,9 +540,6 @@ class RayTrialExecutor(TrialExecutor):
 
         """
         self.set_status(trial, Trial.ERROR if error else Trial.TERMINATED)
-
-
-
         self._trial_just_finished = True
         trial.set_location(Location())
 
@@ -631,7 +605,6 @@ class RayTrialExecutor(TrialExecutor):
             True if the remote runner has been started. False if trial was
                 not started (e.g. because of lacking resources/pending PG).
         """
-
         if not trial.uses_placement_groups:
             self._commit_resources(trial.resources)
         try:
@@ -660,7 +633,6 @@ class RayTrialExecutor(TrialExecutor):
     def stop_trial(self,
                    trial: Trial,
                    error: bool = False,
-                   return_resources=True,
                    error_msg: Optional[str] = None,
                    destroy_pg_if_cannot_replace: bool = True) -> None:
         """Only returns resources if resources allocated.
@@ -675,31 +647,26 @@ class RayTrialExecutor(TrialExecutor):
             destroy_pg_if_cannot_replace=destroy_pg_if_cannot_replace)
         if prior_status == Trial.RUNNING:
             logger.debug("Trial %s: Returning resources.", trial)
-
             if not trial.uses_placement_groups:
-                if return_resources:
-                    self._return_resources(trial.resources)
+                self._return_resources(trial.resources)
             out = self._find_item(self._running, trial)
             for result_id in out:
                 self._running.pop(result_id)
-
 
     def continue_training(self, trial: Trial) -> None:
         """Continues the training of this trial."""
         self._train(trial)
 
-    def pause_trial(self, trial: Trial, return_resources=False) -> None:
+    def pause_trial(self, trial: Trial) -> None:
         """Pauses the trial.
 
         If trial is in-flight, preserves return value in separate queue
         before pausing, which is restored when Trial is resumed.
         """
-
         trial_future = self._find_item(self._running, trial)
         if trial_future:
             self._paused[trial_future[0]] = trial
-        super(RayTrialExecutor, self).pause_trial(trial, return_resources)
-
+        super(RayTrialExecutor, self).pause_trial(trial)
 
     def reset_trial(self,
                     trial: Trial,
@@ -861,19 +828,9 @@ class RayTrialExecutor(TrialExecutor):
             committed.gpu - resources.gpu_total(),
             custom_resources=custom_resources)
 
-        print("++++++++++++++++")
-        print("++++++++++++++++")
-        print("returning resources: %d" % resources.gpu_total())
-        print("committed gpus: %d" % committed.gpu)
-        print("++++++++++++++++")
-        print("++++++++++++++++")
-
         assert self._committed_resources.is_nonnegative(), (
             "Resource invalid: {}".format(resources))
 
-
-
-    #ABD: changes made in this function to limit the maximum it can use
     def _update_avail_resources(self, num_retries=5):
         if time.time() - self._last_resource_refresh < self._refresh_period:
             return
@@ -907,7 +864,6 @@ class RayTrialExecutor(TrialExecutor):
         resources = resources.copy()
         num_cpus = resources.pop("CPU", 0)
         num_gpus = resources.pop("GPU", 0)
-
         memory = ray_constants.from_memory_units(resources.pop("memory", 0))
         object_store_memory = ray_constants.from_memory_units(
             resources.pop("object_store_memory", 0))
@@ -936,7 +892,6 @@ class RayTrialExecutor(TrialExecutor):
             boolean
 
         """
-
         if trial.uses_placement_groups:
             return trial in self._staged_trials or self._pg_manager.can_stage(
             ) or self._pg_manager.has_ready(
@@ -951,15 +906,12 @@ class RayTrialExecutor(TrialExecutor):
         has exceeded self._refresh_period. This also assumes that the
         cluster is not resizing very frequently.
         """
-        
         if resources.has_placement_group:
             return self._pg_manager.can_stage()
-        
 
         self._update_avail_resources()
         currently_available = Resources.subtract(self._avail_resources,
                                                  self._committed_resources)
-
         have_space = (
             resources.cpu_total() <= currently_available.cpu
             and resources.gpu_total() <= currently_available.gpu
@@ -968,17 +920,6 @@ class RayTrialExecutor(TrialExecutor):
             currently_available.object_store_memory and all(
                 resources.get_res_total(res) <= currently_available.get(res)
                 for res in resources.custom_resources))
-
-        if self._max_GPU == 1:
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-            print("trial needs: %d GPUs" % resources.gpu_total())
-            print("commited gpus: %d" % int(self._committed_resources.gpu))
-            print("available resources for trial: %d" % int(self._avail_resources.gpu))
-            print("have_space: %s" % str(have_space))
-            # print("committed_resources: %d" % int(trial_runner.trial_executor._max_GPU))
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-
-
 
         if have_space:
             # The assumption right now is that we block all trials if one
@@ -1086,9 +1027,6 @@ class RayTrialExecutor(TrialExecutor):
         Returns:
              Checkpoint object, or None if an Exception occurs.
         """
-
-
-
         result = result or trial.last_result
         with self._change_working_directory(trial):
             if storage == Checkpoint.MEMORY:
