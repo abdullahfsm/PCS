@@ -1,19 +1,26 @@
 #!/bin/bash
+traces=()
 
-# FIFO
-python3 simulation/sim.py -workload themis1 -num_gpus 64 -num_apps 500 -scheduling_policy FIFO -output_file FIFO_toy_result.csv
 
-# SRSF
-python3 simulation/sim.py -workload themis1 -num_gpus 64 -num_apps 500 -scheduling_policy SRSF -output_file SRSF_toy_result.csv
-
-# PCS-pred
-python3 simulation/sim.py -workload themis1 -num_gpus 64 -num_apps 500 -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_themis1_avg_jct_avg_pred_error_pred.pkl -output_file PCS_pred_toy_result.csv
-
-# PCS-bal
-python3 simulation/sim.py -workload themis1 -num_gpus 64 -num_apps 500 -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_themis1_avg_jct_avg_pred_error_bal.pkl -output_file PCS_bal_toy_result.csv
-
-# PCS-jct
-python3 simulation/sim.py -workload themis1 -num_gpus 64 -num_apps 500 -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_themis1_avg_jct_avg_pred_error_jct.pkl -output_file PCS_jct_toy_result.csv
+for trace in {themis1,}
+do
+	traces+=("$trace")
+	
+	for var in {jct,bal,pred,}
+	do
+		output_file=new_data/PCS_"$var"_"$trace"_result.csv
+		python3 simulation/sim.py -workload "$trace" -num_gpus 64 -num_apps 500 -scheduling_policy MCS -output_file "$output_file" -MCS_config_file data/PCS_configs/PCS_config_"$trace"_"$var".pkl
+		echo "PCS_$var" done
+	done
+		
+	for policy in {FIFO,SRSF,AFS,THEMIS,}
+	do
+		output_file=new_data/"$policy"_"$trace"_result.csv
+		python3 simulation/sim.py -workload "$trace" -num_gpus 64 -num_apps 500 -scheduling_policy "$policy" -output_file "$output_file"
+		echo "$policy" done
+	done
+	
+done
 
 #Compare results
-python3 simulation/utils/result_summary.py -fnames FIFO_toy_result.csv SRSF_toy_result.csv PCS_pred_toy_result.csv PCS_bal_toy_result.csv PCS_jct_toy_result.csv -normalize_jct
+python3 new_data/parser.py -traces "${traces[@]}"
