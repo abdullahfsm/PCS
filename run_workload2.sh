@@ -29,4 +29,4 @@ do
 	
 done
 
-python3 simulation/utils/result_summary.py -fnames "${output_files[@]}" -normalize_jct
+python3 utils/parser.py -trac "${output_files[@]}" -normalize_jct

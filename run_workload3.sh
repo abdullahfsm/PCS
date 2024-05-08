@@ -31,4 +31,4 @@ python3 simulation/sim.py -workload gavel -load 1.2 -num_gpus 64 -num_apps 3000 
 output_files+=(new_data/PCS_jct_gavel_result.csv)
 
 #Compare results
-python3 simulation/utils/result_summary.py -fnames "${output_files[@]}" -normalize_jct
+python3 new_data/parser.py -traces gavel
