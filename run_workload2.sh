@@ -13,14 +13,14 @@ do
 	for var in {jct,bal,pred,}
 	do
 		output_file=new_data/PCS_"$var"_"$trace"_result.csv
-		python3 simulation/sim.py -scheduling_policy MCS -num_gpus 64 -output_file $output_file -trace trace_"$trace" -MCS_config_file data/PCS_configs/PCS_config_"$trace"_"$var".pkl -num_apps $num_apps
+		python3 simulation/sim.py -trace trace_"$trace" -num_gpus 64 -num_apps $num_apps -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_"$trace"_"$var".pkl -output_file $output_file
 		echo "PCS_$var" done
 	done
 		
 	for policy in {FIFO,SRSF,AFS,THEMIS,}
 	do
 		output_file=new_data/"$policy"_"$trace"_result.csv
-		python3 simulation/sim.py -scheduling_policy "$policy" -num_gpus 64 -output_file $output_file -trace trace_"$trace" -num_apps $num_apps
+		python3 simulation/sim.py -trace trace_"$trace" -num_gpus 64 -num_apps $num_apps -scheduling_policy $policy -output_file $output_file
 		echo "$policy" done
 	done
 	
