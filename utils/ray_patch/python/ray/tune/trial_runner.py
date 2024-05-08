@@ -668,6 +668,9 @@ class TrialRunner:
     def concurrency_manager(self):
 
 
+        if self._scheduler_trial_runner_queue == None:
+            return -1
+
 
         # fetch updated current concurrency
         if self._scheduler_trial_runner_queue != None:
@@ -886,11 +889,6 @@ class TrialRunner:
         
 
         if self._scheduler_trial_runner_queue != None:
-
-            '''
-            if not self._scheduler_trial_runner_queue["uplink"].empty():
-                _ = self._scheduler_trial_runner_queue["uplink"].get()
-            '''
 
             estimated_times = self._scheduler_alg.estimate_remaining_trial_times()
             self._scheduler_trial_runner_queue["uplink"].put(estimated_times)

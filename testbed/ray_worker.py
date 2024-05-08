@@ -277,7 +277,6 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
                 "p5": tune.choice([0,1])},
         event_queue = Queue(),
         event_creator=Event,
-        scheduler_trial_runner_queue={"downlink": Queue(), "uplink": Queue()},
         inactivity_time=1440,
         )
         # time_budget_s=budget)
