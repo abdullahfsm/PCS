@@ -114,6 +114,11 @@ class RayAppThemisScheduler(RayAppGenericScheduler):
             event.event_time = datetime.now()
             event_queue.put(event)
             
+        if self._app_info_fn:
+            with open(self._app_info_fn,'w') as fp:
+                fp.write("app_id,submit_time,start_time,end_time,estimated_start_time,estimated_end_time,fair_act,service,num_apps_seen_diff\n")
+
+
 
         last_self_check_time = datetime.now()
 
