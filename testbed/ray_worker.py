@@ -6,9 +6,19 @@ import argparse
 
 
 from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
+from ray.tune.utils.placement_groups import PlacementGroupFactory
+
+
+from ray.tune.trial import Trial
+from ray.tune.schedulers import ResourceChangingScheduler, ASHAScheduler
+from ray.tune import Trainable
+from ray.tune.resources import Resources
 
 from tensorflow.keras import datasets, layers, models, regularizers, Input
 from ray.tune.integration.keras import TuneReportCallback
+from ray.tune.integration.keras import TuneReportCheckpointCallback
+
+
 from filelock import FileLock
 import os
 
@@ -16,6 +26,9 @@ import os
 from ray.util.queue import Queue
 
 from common import Event
+
+
+CHECKPOINT_FILENAME="my_model.keras"
 
 
 class App(object):
@@ -138,7 +151,7 @@ def normalize(X_train,X_test):
 
 
 
-def train_cifar10(config, checkpoint_dir=None):
+def train_cifar10(config: dict, checkpoint_dir=None):
 
     import tensorflow as tf
 
@@ -182,7 +195,12 @@ def train_cifar10(config, checkpoint_dir=None):
 
     ###################################################################
 
+
     model = model_generator(config)
+
+    # load weights
+    if checkpoint_dir:
+        model = tf.keras.models.load_model(os.path.join(checkpoint_dir, CHECKPOINT_FILENAME))
 
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
@@ -198,9 +216,36 @@ def train_cifar10(config, checkpoint_dir=None):
             epochs=epochs,
             verbose=0,
             validation_data=(x_validation, y_validation),
-            callbacks=[TuneReportCallback({
-                "mean_accuracy": "accuracy"
-            })])
+            callbacks=[
+                TuneReportCheckpointCallback(
+                    filename=CHECKPOINT_FILENAME,
+                    # checkpointing should happen every iteration
+                    # with dynamic resource allocation
+                    frequency=1)
+
+
+            ])
+
+
+def example_resources_allocation_function(
+        trial_runner: "trial_runner.TrialRunner", trial: Trial,
+        result: Dict[str, Any], scheduler: "ResourceChangingScheduler"
+) -> Union[None, PlacementGroupFactory, Resources]:
+    base_trial_resource = scheduler._base_trial_resources or PlacementGroupFactory([{"CPU": 1, "GPU": 1}])
+    min_gpu = base_trial_resource.required_resources.get("GPU", 1)
+
+    # Get the number of GPUs available in total (not just free)
+    total_available_gpus = (trial_runner.trial_executor._avail_resources.gpu)
+
+
+    # # Divide the free CPUs among all live trials
+    # cpu_to_use = max(
+    #     min_cpu,
+    #     total_available_cpus // len(trial_runner.get_live_trials()))
+    # Assign new CPUs to the trial in a PlacementGroupFactory
+    return PlacementGroupFactory([{"CPU": 1, "GPU": total_available_gpus//len(trial_runner.get_live_trials())}])
+
+
 
 
 def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
@@ -209,9 +254,17 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
     trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
 
+    trial_scheduler = ResourceChangingScheduler(
+        base_scheduler=trial_scheduler,
+        resources_allocation_function=example_resources_allocation_function
+        )
+
+
+
+
     analysis = tune.run(
         train_cifar10,
-        resources_per_trial={"gpu": 1},
+        resources_per_trial=PlacementGroupFactory([{"CPU": 1, "GPU": 1}]),
         name="app_0",
         trial_name_creator=lambda T: "app_%d_%s" % (0, T.trial_id),
         scheduler=trial_scheduler,
