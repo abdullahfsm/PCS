@@ -4,7 +4,7 @@
 ## Starting a cloudlab experiment
 Assuming that you have a cloudlab profile:
 * Navigate to [Create Experiment Profile](https://www.cloudlab.us/manage_profile.php)
-* Upload the provided cloudlab profile (cloudlab_profile.py)
+* Upload the provided cloudlab profile (utils/cloudlab_profile.py)
 * Once the experiment profile has been set up, navigate to [Start Experiment](https://www.cloudlab.us/instantiate.php) and choose the profile just created
 * For reproducing results, the parameters should be `n: 16` and `ntype: c240g5`, otherwise, the default should be sufficient
 * Starting the experiment may take some time
