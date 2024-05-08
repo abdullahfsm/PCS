@@ -9,3 +9,4 @@ results/
 simulation/__pycache__
 *.ipynb_checkpoints*
 new_data/*.csv
+figures/*.pdf
