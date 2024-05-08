@@ -2,7 +2,6 @@ import random
 import os, sys
 from datetime import datetime, timedelta
 import copy
-import numpy as np
 import pickle
 from functools import partial
 import ray
@@ -166,8 +165,12 @@ class AppGenericScheduler(object):
         if self._p_error and self._estimator:
 
             if app.induced_error == 0:
-                app.induced_error = (1.0 + np.random.uniform(-1.0*(self._p_error/100.0),(self._p_error/100.0)))
-            # error = (1.0 + np.random.uniform(-1.0*(self._p_error/100.0),(self._p_error/100.0)))
+
+
+                
+
+                app.induced_error = (1.0 + random.uniform(-1.0*(self._p_error/100.0),(self._p_error/100.0)))
+            
             for job in app.jobs.values():
                 job.estimated_remaining_service = max(job.remaining_service*app.induced_error, 0.0)
         else:
@@ -497,9 +500,6 @@ class AppGenericScheduler(object):
             self._num_finished_apps += 1
 
 
-       
-        return "job_end->stage_inprog"
-
 
     def __pick_min_event(self):
 
@@ -576,24 +576,11 @@ class AppGenericScheduler(object):
             self.update_end_events(event.event_time)
 
             # ray changes here
-            # if event.event_type == Event.APP_SUB and self._estimate and np.random.uniform() < 1.2:
             if event.event_type == Event.APP_SUB and self._estimator and random.uniform(0,1) < p_of_estimate:
 
                 if self._collect_dataset_stats_flag:
                     self.collect_dataset_stats(self._app_list[event.app_id])
             
-
-                # if len(async_promises) == self._estimate_batch:
-                #     for p in async_promises:
-                #         if p:
-                #             await p
-                #     async_promises = list()
-
-                
-                # self._sim_futures.append(self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time))
-                # async_promises.append(self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time))
-                # self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time)
-
                 
                 ret = self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time)
                 if ret:

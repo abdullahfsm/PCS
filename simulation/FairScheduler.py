@@ -1,7 +1,6 @@
 import sys, os
 
 import copy, random
-import numpy as np
 from datetime import datetime, timedelta
 from heapq import heappush, heappop, heapify
 from fractions import Fraction as frac
