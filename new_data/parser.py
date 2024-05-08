@@ -2,173 +2,79 @@ import os
 import sys
 import pandas as pd
 import numpy as np
+import argparse
+from tabulate import tabulate
 
+def main(args):
 
+    policy_data = {}
+    pd_data = {}
 
+    min_avg_jct = float('inf')
+    min_p99_jct = float('inf')
+    for policy in args.policies:
+        trace = args.trace
+        file_path = "{}_{}_result.csv".format(policy, trace)
 
+        if os.path.exists(file_path):
 
+            df = pd.read_csv(file_path)
 
+            df['jct'] =  df['end_time'] - df['submit_time']
+            valid_prediction = (df['estimated_end_time'] == -1) & (df['estimated_start_time'] == -1)
+            # valid_prediction = df['estimated_end_time'] != -1
 
-def main():
-	trace = "0e4a51"
-	fname = "{}_{}_result.csv"
-	policy = "SRSF"
+            filtered_df = df.drop(df[valid_prediction].index)
 
-	df = pd.read_csv(fname.format(policy, trace))
+            filtered_df['pred_jct'] =  filtered_df['estimated_end_time'] - filtered_df['submit_time']
+            filtered_df['jct'] =  filtered_df['end_time'] - filtered_df['submit_time']
 
-	df['jct'] =  df['end_time'] - df['submit_time']
-	valid_prediction = (df['estimated_end_time'] == -1) & (df['estimated_start_time'] == -1)
-	# valid_prediction = df['estimated_end_time'] != -1
+            filtered_df['error'] = 100.0 * (filtered_df['pred_jct'] - filtered_df['jct']).abs() / filtered_df['pred_jct']
 
-	filtered_df = df.drop(df[valid_prediction].index)
+            pd_data[policy] = {"df": df, "filtered_df": filtered_df}
 
-	filtered_df['pred_jct'] =  filtered_df['estimated_end_time'] - filtered_df['submit_time']
-	filtered_df['jct'] =  filtered_df['end_time'] - filtered_df['submit_time']
+            min_avg_jct = df['jct'].mean() if min_avg_jct > df['jct'].mean() else min_avg_jct
+            min_p99_jct = df['jct'].quantile(0.99) if min_p99_jct > df['jct'].quantile(0.99) else min_p99_jct
+        else:
+            print(f"{file_path} doesn't exist. Skipping (policy:{policy}, trace:{trace})")
 
-	filtered_df['error'] = 100.0 * (filtered_df['pred_jct'] - filtered_df['jct']).abs() / filtered_df['pred_jct']
 
-	print(df['jct'].mean())
-	print(filtered_df['error'].mean())
-	print(filtered_df['error'].quantile(0.99))
+    table_data = []
+    header = ["Policy", "Avg JCT", "p99 JCT", "Norm. Avg JCT", "Norm. p99 JCT", "Avg Pred Error", "p99 Pred Error",]
+    for policy in pd_data:
 
+        df = pd_data[policy].get('df')
+        filtered_df = pd_data[policy].get('filtered_df')
 
+        table_data.append([policy,
+            df['jct'].mean(),
+            df['jct'].quantile(0.99),
+            df['jct'].mean()/min_avg_jct,
+            df['jct'].quantile(0.99)/min_p99_jct,
+            filtered_df['error'].mean(),
+            filtered_df['error'].quantile(0.99),
+            ])
 
-
-
-
-
-def main2():
-	fdir = "new/"
-
-	# seeds=[1954,3266,5897,6359,9005]
-
-	# seed = 9005
-
-	fname = "{}_gavel_result.csv"
-	PCS_fname = "{}_gavel_result.csv"
-
-
-	file_path = os.path.join(fdir, PCS_fname.format('THEMIS'))
-
-	# Load the CSV file into a DataFrame
-	df = pd.read_csv(file_path)
-	df['jct'] =  df['end_time'] - df['submit_time']
-
-
-	valid_prediction = df['estimated_end_time'] != -1 and df['start_time'] != -1
-	filtered_df = df[valid_prediction]
-
-	filtered_df['pred_jct'] =  filtered_df['estimated_end_time'] - filtered_df['submit_time']
-	filtered_df['jct'] =  filtered_df['end_time'] - filtered_df['submit_time']
-
-	filtered_df['error'] = 100.0 * (filtered_df['pred_jct'] - filtered_df['jct']).abs() / filtered_df['pred_jct']
-
-
-	print(df)
-	print(filtered_df)
-
-	# print(df['jct'].mean())
-	# print(filtered_df['error'].quantile(0.99))
-
-
-
-
-
-
-	
-
-def orig_main():
-	
-
-	fdir = "orig/gavel-contsingle/1.2"
-
-	seeds=[1954,3266,5897,6359,9005]
-
-	seed = 9005
-
-	fname = "{}_64_1.2_gavel-contsingle_{}.csv"
-	PCS_fname = "{}_64_1.2_gavel-contsingle_{}_{}.csv"
-
-
-	file_path = os.path.join(fdir, fname.format('THEMIS', seed))
-	# file_path = os.path.join(fdir, PCS_fname.format('MCS', seed, 2))
-
-	# Load the CSV file into a DataFrame
-	df = pd.read_csv(file_path)
-	df['jct'] =  df['end_time'] - df['submit_time']
-	df['pred_jct'] =  df['estimated_end_time'] - df['submit_time']
-	df['error'] = 100.0 * (df['pred_jct'] - df['jct']).abs() / df['pred_jct']
-
-	print(df['jct'].mean())
-	print(df['error'].quantile(0.99))
-
-	return
-
-	print(df['service'].quantile(1.0))
-
-
-	no_wait_condition = df['submit_time'] == df['start_time']
-
-	filtered_df = df[no_wait_condition]
-
-	slowdown = (filtered_df['jct'])/filtered_df['service']
-
-	slowdown_neq_1 = filtered_df[slowdown != 1]
-
-	gpus = slowdown_neq_1['service']/slowdown_neq_1['jct']
-
-	# print(slowdown)
-
-	# print(slowdown_neq_1)
-
-	print(gpus.max())
-
-	return
-
-	jct = df['end_time'] - df['submit_time']
-	predicted_jct = df['estimated_end_time'] - df['submit_time']
-
-	service = df['service']
-
-	# error = 100.0 * (predicted_jct - jct).abs() / predicted_jct
-
-	slowdown = jct/service
-
-	print(error.quantile(0.99))
-
-
-	return
-
-
-	
-	fnames = [fname.format('SRSF', seed),
-			fname.format('AFS', seed),
-			fname.format('THEMIS', seed),
-			PCS_fname.format('MCS', seed, 0),
-			PCS_fname.format('MCS', seed, 1),
-			PCS_fname.format('MCS', seed, 2),]
-
-	for fname in fnames:
-		file_path = os.path.join(fdir, fname)
-
-		# Load the CSV file into a DataFrame
-		df = pd.read_csv(file_path)
-
-		# print(df.columns)
-
-		jct = df['end_time'] - df['submit_time']
-		predicted_jct = df['estimated_end_time'] - df['submit_time']
-
-		error = 100.0 * (predicted_jct - jct).abs() / predicted_jct
-
-		print(error.quantile(0.99))
-
-
-
-
-
+    
+    print(tabulate(table_data, headers=header, tablefmt='grid'))
 
 
 if __name__ == '__main__':
-	main()
-	# orig_main()
+
+    valid_policies = ["FIFO", "SRSF", "THEMIS", "AFS", "PCS_jct", "PCS_bal", "PCS_pred"]
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-policies", nargs="+", help=" space seperated list of policies.", choices= valid_policies, default = ["*"], type=str
+    )
+
+    parser.add_argument(
+        "-trace", help="name of trace (e.g., gavel, 0e4a51 etc.)", type=str, required=True
+    )
+
+
+    args = parser.parse_args()
+
+    if args.policies == ["*"]:
+        args.policies = valid_policies
+    main(args)
