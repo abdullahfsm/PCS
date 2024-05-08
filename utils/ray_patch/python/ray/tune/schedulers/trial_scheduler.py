@@ -10,7 +10,6 @@ class TrialScheduler:
 
     CONTINUE = "CONTINUE"  #: Status for continuing trial execution
     PAUSE = "PAUSE"  #: Status for pausing trial execution
-    PAUSE_YEILD = "PAUSE_YEILD"  #: Status for pausing trial execution
     STOP = "STOP"  #: Status for stopping trial execution
 
     _metric = None
@@ -47,16 +46,6 @@ class TrialScheduler:
 
         return True
 
-
-
-    '''
-    def add_trial_to_pause_list(self, trial: Trial):
-        raise NotImplementedError
-
-    def remove_trial_to_pause_list(self, trial: Trial):
-        raise NotImplementedError
-    '''
-
     def on_trial_add(self, trial_runner: "trial_runner.TrialRunner",
                      trial: Trial):
         """Called when a new trial is added to the trial runner."""
@@ -89,26 +78,6 @@ class TrialScheduler:
         either completes naturally or by manual termination."""
 
         raise NotImplementedError
-
-
-    def on_trial_pause(self, trial_runner: "trial_runner.TrialRunner",
-                          trial: Trial):
-        """Notification for trial pausing.
-
-        This will only be called when the trial is in the RUNNING state and
-        either completes naturally or by manual termination."""
-
-        raise NotImplementedError
-
-    def on_trial_unpause(self, trial_runner: "trial_runner.TrialRunner",
-                          trial: Trial):
-        """Notification for trial pausing.
-
-        This will only be called when the trial is in the RUNNING state and
-        either completes naturally or by manual termination."""
-
-        raise NotImplementedError
-
 
     def on_trial_remove(self, trial_runner: "trial_runner.TrialRunner",
                         trial: Trial):
