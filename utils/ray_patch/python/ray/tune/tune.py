@@ -562,7 +562,7 @@ def run(
     # User Warning for GPUs
     if trial_executor.has_gpus():
         if isinstance(resources_per_trial,
-                      dict) and "gpu" in resources_per_trial:
+                      dict) and ("GPU" in resources_per_trial or "gpu" in resources_per_trial):
             # "gpu" is manually set.
             pass
         elif _check_default_resources_override(experiments[0].run_identifier):
