@@ -72,9 +72,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
     def _update_avail_resources(self, num_retries=5):
 
-        print("This function is called")
-
-
         if self._get_queue:
             try:
                 resources = self._get_queue.get(block=False)
