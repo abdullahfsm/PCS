@@ -80,6 +80,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 if not isinstance(resources, Resources):
                     raise ValueError(f"resources not of type Resources")
                 print(f"Got resources: {resources}")
+
+                self._avail_resources = resources
+
             except Empty:
                 # do nothing. no need to update
                 pass
@@ -89,6 +92,10 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
             self._last_resource_refresh = time.time()
             self._resources_initialized = True
+
+
+
+
             # self._avail_resources = Resources(
             #     int(num_cpus),
             #     int(num_gpus),
