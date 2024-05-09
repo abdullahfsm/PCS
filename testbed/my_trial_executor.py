@@ -36,7 +36,7 @@ from ray.util import log_once
 from ray.util.annotations import DeveloperAPI
 
 from ray.tune.ray_trial_executor import *
-
+from ray.util.queue import Queue, Empty
 
 class MyRayTrialExecutor(RayTrialExecutor):
     """An implementation of MyRayTrialExecutor based on RayTrialExecutor."""
