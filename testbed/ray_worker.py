@@ -61,11 +61,15 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 init_resources: Resources = Resources(cpu=0,gpu=0)):
         
 
-        super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
+        
 
         self._set_queue = set_queue
         self._get_queue = get_queue
+
+        super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
+
         self._avail_resources = init_resources
+
 
         self._update_avail_resources()
 
