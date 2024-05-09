@@ -324,6 +324,8 @@ def example_resources_allocation_function(
 
     per_trial_gpu_allocation = 1
 
+    print(f"DEBUG: {trial_idxs}")
+
     for trial_idx in len(trial_idxs):
         allocation = min(per_trial_gpu_allocation, total_available_gpus)
         gpu_allocation[trial_idx] = allocation
