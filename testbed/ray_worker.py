@@ -327,21 +327,23 @@ def example_resources_allocation_function(
     all_trials = trial_runner.get_live_trials()
     trial_idxs = [get_trial_idx(t) for t in all_trials]
 
-    gpu_allocation = [0] * len(all_trials)
+    gpu_allocations = [0] * len(all_trials)
 
-    per_trial_gpu_allocation = 1
+    per_trial_gpu_allocations = 1
 
     print(f"DEBUG: {trial_idxs}")
 
     for trial_idx in trial_idxs:
-        allocation = min(per_trial_gpu_allocation, total_available_gpus)
-        gpu_allocation[trial_idx] = allocation
+        allocation = min(per_trial_gpu_allocations, total_available_gpus)
+        gpu_allocations[trial_idx] = allocation
         total_available_gpus -= allocation
 
 
+    gpu_allocation = gpu_allocations[get_trial_idx(trial)]
+
     # trial_runner.trial_executor.resources
     print("++++++++++++++++++++++")
-    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {trial_runner.trial_executor._avail_resources.gpu} and has been assigned {gpu_allocation[get_trial_idx(trial)]}")
+    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {trial_runner.trial_executor._avail_resources.gpu} and has been assigned {gpu_allocation}")
     print("++++++++++++++++++++++")
 
 
@@ -350,7 +352,10 @@ def example_resources_allocation_function(
     #     min_cpu,
     #     total_available_cpus // len(trial_runner.get_live_trials()))
     # Assign new CPUs to the trial in a PlacementGroupFactory
-    return PlacementGroupFactory([{"CPU": 1 if get_trial_idx(trial) > 0 else 0, "GPU": get_trial_idx(trial)}])
+
+
+
+    return PlacementGroupFactory([{"CPU": 1 if gpu_allocation > 0 else 0, "GPU": gpu_allocation}])
     # return PlacementGroupFactory([{"CPU": 1, "GPU": total_available_gpus//len(trial_runner.get_live_trials())}])
 
 
