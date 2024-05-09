@@ -68,6 +68,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         self._avail_resources = init_resources
 
+        print(f"avail_resources: {self._avail_resources.gpu}")
+        print(f"committed_resources: {self._committed_resources.gpu}")
+
     def _has_resources(self, resources: Resources) -> bool:
         """Returns whether this runner has at least the specified resources.
 
@@ -104,7 +107,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         
         has_resources =  self._has_resources(trial.resources)
 
-        print(f"trial_id: {trial.trial_id}, _avail_resources: {self._avail_resources}, committed_resources: {self._committed_resources}, requested: {trial.resources}, has_resources: {has_resources}")
+        print(f"trial_id: {trial.trial_id}, _avail_resources: {self._avail_resources.gpu}, committed_resources: {self._committed_resources.gpu}, requested: {trial.resources.gpu}, has_resources: {has_resources}")
 
         if has_resources:
             self._commit_resources(trial.resources)
