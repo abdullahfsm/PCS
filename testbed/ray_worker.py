@@ -66,24 +66,59 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._get_queue = get_queue
         super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
 
-        print(f"get_queue: {self._get_queue}")
-
-
         self._avail_resources = init_resources
 
+    def _has_resources(self, resources: Resources) -> bool:
+        """Returns whether this runner has at least the specified resources.
+
+        This refreshes the Ray cluster resources if the time since last update
+        has exceeded self._refresh_period. This also assumes that the
+        cluster is not resizing very frequently.
+        """
+
+        self._update_avail_resources()
+        currently_available = Resources.subtract(self._avail_resources,
+                                                 self._committed_resources)
+        have_space = (
+            resources.cpu_total() <= currently_available.cpu
+            and resources.gpu_total() <= currently_available.gpu
+            and resources.memory_total() <= currently_available.memory
+            and resources.object_store_memory_total() <=
+            currently_available.object_store_memory and all(
+                resources.get_res_total(res) <= currently_available.get(res)
+                for res in resources.custom_resources))
+
+        if have_space:
+            # The assumption right now is that we block all trials if one
+            # trial is queued.
+            self._trial_queued = False
+            return True
+
+        return False
 
     def start_trial(self,
                     trial: Trial,
                     checkpoint: Optional[Checkpoint] = None,
                     train: bool = True) -> bool:
 
-
-
         
+        has_resources =  self._has_resources(trial.resources)
 
-        print(f"DEBUG: trial_id: {trial.trial_id} has_resources?: {self.has_resources_for_trial(trial)} trial.resources: {trial.resources} trial.resources.has_placement_group: {trial.resources.has_placement_group}")
+        if has_resources:
+            self._committed_resources(trial.resources)
+            return super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+        return False
 
-        super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+    def stop_trial(self,
+                   trial: Trial,
+                   error: bool = False,
+                   error_msg: Optional[str] = None,
+                   destroy_pg_if_cannot_replace: bool = True) -> None:
+
+        super(MyRayTrialExecutor, self).stop_trial(trial, error, error_msg, destroy_pg_if_cannot_replace)
+        self._return_resources(trial.resources)
+
+
 
     def _update_avail_resources(self, num_retries=5):
 
@@ -370,11 +405,6 @@ def example_resources_allocation_function(
 
     return PlacementGroupFactory([{"CPU": 1 if gpu_allocation > 0 else 0, "GPU": gpu_allocation}])
     # return PlacementGroupFactory([{"CPU": 1, "GPU": total_available_gpus//len(trial_runner.get_live_trials())}])
-
-
-
-
-
 
 
 
