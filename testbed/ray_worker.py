@@ -70,8 +70,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._avail_resources = init_resources
 
 
-
-
     def _update_avail_resources(self, num_retries=5):
 
         print("This function is called")
@@ -101,7 +99,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
             # self._last_resource_refresh = time.time()            
         else:
             if ray.is_initialized():
-                super(MyRayTrialExecutor)._update_avail_resources()
+                super(MyRayTrialExecutor, self)._update_avail_resources()
 
 class App(object):
     """docstring for App"""
