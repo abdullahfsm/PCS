@@ -453,6 +453,10 @@ def run(
     else:
         logger.debug("Ignoring some parameters passed into tune.run.")
 
+
+    print(f"DEBUG: {experiments} isExpt: {isinstance(experiments[0], Experiment)}")
+
+
     if sync_config.sync_to_cloud:
         for exp in experiments:
             assert exp.remote_checkpoint_dir, (
