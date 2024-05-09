@@ -78,7 +78,10 @@ class MyRayTrialExecutor(RayTrialExecutor):
                     train: bool = True) -> bool:
 
 
-        print(f"DEBUG: trial_id: {trial.trial_id} has_resources?: {self.has_resources_for_trial(trial)}")
+
+        
+
+        print(f"DEBUG: trial_id: {trial.trial_id} has_resources?: {self.has_resources_for_trial(trial)} trial.resources: {trial.resources} trial.resources.has_placement_group: {trial.resources.has_placement_group}")
 
         super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
 
