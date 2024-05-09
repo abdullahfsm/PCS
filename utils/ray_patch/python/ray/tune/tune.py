@@ -412,6 +412,10 @@ def run(
         reuse_actors=reuse_actors,
         queue_trials=queue_trials,
         result_buffer_length=result_buffer_length)
+
+
+    print(type(trial_executor))
+
     if isinstance(run_or_experiment, list):
         experiments = run_or_experiment
     else:
