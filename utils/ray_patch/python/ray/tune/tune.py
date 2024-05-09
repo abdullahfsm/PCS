@@ -572,6 +572,7 @@ def run(
     print("==================")
     print(type(trial_executor))
     print(hasattr(trial_executor, "_get_queue"))
+    print(trial_executor._get_queue)
 
     if trial_executor.has_gpus():
         if isinstance(resources_per_trial,
