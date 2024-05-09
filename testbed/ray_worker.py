@@ -101,7 +101,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
             # self._last_resource_refresh = time.time()            
         else:
             if ray.is_initialized():
-                super(MyRayTrialExecutor, self)._update_avail_resources()
+                super(MyRayTrialExecutor)._update_avail_resources()
 
 class App(object):
     """docstring for App"""
@@ -355,13 +355,6 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
 
     trial_executor = MyRayTrialExecutor(get_queue=queue, init_resources=Resources(cpu=1,gpu=1))
-
-    return
-
-
-
-
-
 
     analysis = tune.run(
         train_cifar10,
