@@ -107,11 +107,17 @@ class MyRayTrialExecutor(RayTrialExecutor):
         
         has_resources =  self._has_resources(trial.resources)
 
-        print(f"trial_id: {trial.trial_id}, _avail_resources: {self._avail_resources.gpu}, committed_resources: {self._committed_resources.gpu}, requested: {trial.resources.gpu}, has_resources: {has_resources}")
+        # print(f"trial_id: {trial.trial_id}, _avail_resources: {self._avail_resources.gpu}, committed_resources: {self._committed_resources.gpu}, requested: {trial.resources.gpu}, has_resources: {has_resources}")
 
         if has_resources:
             self._commit_resources(trial.resources)
-            return super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+
+            print(f"committing resource to trial: {trial.trial_id}")
+
+            start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+            print(f"start_val: {start_val}")
+
+            return start_val
         return False
 
     def stop_trial(self,
