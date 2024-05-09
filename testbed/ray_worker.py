@@ -20,6 +20,8 @@ from ray.tune.integration.keras import TuneReportCallback
 from ray.tune.integration.keras import TuneReportCheckpointCallback
 
 
+from ray.tune.ray_trial_executor import RayTrialExecutor
+
 from filelock import FileLock
 import os
 
@@ -28,11 +30,63 @@ from ray.util.queue import Queue
 
 from common import Event
 
-from time import sleep
+import time
+
 
 
 CHECKPOINT_FILENAME="my_model.keras"
 
+
+
+class MyRayTrialExecutor(RayTrialExecutor):
+    """An implementation of MyRayTrialExecutor based on RayTrialExecutor."""
+
+    def __init__(self,
+                queue_trials: bool = False,
+                reuse_actors: bool = False,
+                result_buffer_length: Optional[int] = None,
+                refresh_period: Optional[float] = None,
+                wait_for_placement_group: Optional[float] = None,
+                get_queue = None,
+                set_queue = None,
+                init_resources: Resources = Resources(cpu=0,gpu=0)):
+        
+
+        super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
+
+        self._set_queue = set_queue
+        self._get_queue = get_queue
+        self._avail_resources = init_resources
+
+        self._update_avail_resources()
+
+
+    def _update_avail_resources():
+        if self._get_queue:
+            try:
+                resources = self._get_queue.get(block=False)
+                if not isinstance(resources, Resources):
+                    raise ValueError(f"resources not of type Resources")
+                print(f"Got resources: {resources}")
+            except Empty:
+                # do nothing. no need to update
+                pass
+            except Exception as e:
+                raise e
+
+
+            self._last_resource_refresh = time.time()
+            self._resources_initialized = True
+            # self._avail_resources = Resources(
+            #     int(num_cpus),
+            #     int(num_gpus),
+            #     memory=int(memory),
+            #     object_store_memory=int(object_store_memory),
+            #     custom_resources=custom_resources)
+            # self._last_resource_refresh = time.time()            
+        else:
+            if ray.is_initialized():
+                super(MyRayTrialExecutor, self)._update_avail_resources()
 
 class App(object):
     """docstring for App"""
@@ -252,6 +306,10 @@ def example_resources_allocation_function(
 
 
 
+
+
+
+
 def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
     app = App(0, budget, num_samples)
@@ -264,6 +322,8 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
         )
 
 
+    queue = Queue()
+    queue.put(Resources(cpu=1,gpu=1))
 
 
     analysis = tune.run(
@@ -278,16 +338,14 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
                 "p3": tune.choice([0,1]),
                 "p4": tune.choice([0,1]),
                 "p5": tune.choice([0,1])},
-        event_queue = Queue(),
-        event_creator=Event,
-        inactivity_time=1440,
-        checkpoint_at_end=False,
-        )
-        # time_budget_s=budget)
+        
+        trial_executor=MyRayTrialExecutor(get_queue=queue, init_resources=Resources(cpu=1,gpu=1)),
+    )
+        
 
 
     print("Best config: ", analysis.get_best_config(
-        metric="mean_accuracy", mode="max"))
+        metric="accuracy", mode="max"))
 
     # Get a dataframe for analyzing trial results.
     # df = analysis.results_df
@@ -307,4 +365,4 @@ if __name__ == '__main__':
     ray.init(address="auto")
     tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget)
 
-    sleep(2)
+    time.sleep(2)
