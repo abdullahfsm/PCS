@@ -548,6 +548,9 @@ def run(
         callbacks=callbacks,
         metric=metric)
 
+
+    print(f"DEBUG: search_alg: {search_alg} type: {type(search_alg)}")
+
     if not runner.resumed:
         for exp in experiments:
             search_alg.add_configurations([exp])
