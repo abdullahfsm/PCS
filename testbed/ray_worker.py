@@ -12,7 +12,7 @@ import ray
 from ray import tune
 import numpy as np
 import argparse
-
+from functools import partial
 
 
 from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
