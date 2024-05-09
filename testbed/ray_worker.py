@@ -19,7 +19,7 @@ from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 
 
-from ray.tune.trial import Trial
+from ray.tune.trial import Trial, Checkpoint, Location, TrialInfo
 from ray.tune.schedulers import ResourceChangingScheduler, ASHAScheduler
 from ray.tune import Trainable
 from ray.tune.resources import Resources
