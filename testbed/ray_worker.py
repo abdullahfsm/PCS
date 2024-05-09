@@ -122,6 +122,53 @@ class MyRayTrialExecutor(RayTrialExecutor):
             return start_val
         return False
 
+
+
+    def _start_trial(self, trial, checkpoint=None, runner=None,
+                     train=True) -> bool:
+        """Starts trial and restores last result if trial was paused.
+
+        Args:
+            trial (Trial): The trial to start.
+            checkpoint (Optional[Checkpoint]): The checkpoint to restore from.
+                If None, and no trial checkpoint exists, the trial is started
+                from the beginning.
+            runner (Trainable): The remote runner to use. This can be the
+                cached actor. If None, a new runner is created.
+            train (bool): Whether or not to start training.
+
+        Returns:
+            True if trial was started successfully, False otherwise.
+
+        See `RayTrialExecutor.restore` for possible errors raised.
+        """
+        prior_status = trial.status
+        self.set_status(trial, Trial.PENDING)
+        if runner is None:
+            runner = self._setup_remote_runner(trial)
+            if not runner:
+                print("unable to set runner!")
+                return False
+        trial.set_runner(runner)
+        self._notify_trainable_of_new_resources_if_needed(trial)
+        self.restore(trial, checkpoint)
+        self.set_status(trial, Trial.RUNNING)
+
+        if trial in self._staged_trials:
+            self._staged_trials.remove(trial)
+
+        previous_run = self._find_item(self._paused, trial)
+        if prior_status == Trial.PAUSED and previous_run:
+            # If Trial was in flight when paused, self._paused stores result.
+            self._paused.pop(previous_run[0])
+            self._running[previous_run[0]] = trial
+        elif train and not trial.is_restoring:
+            self._train(trial)
+        return True
+
+
+
+
     def stop_trial(self,
                    trial: Trial,
                    error: bool = False,
