@@ -70,7 +70,11 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._update_avail_resources()
 
 
-    def _update_avail_resources():
+    def _update_avail_resources(self, num_retries=5):
+
+        print("This function is called")
+
+
         if self._get_queue:
             try:
                 resources = self._get_queue.get(block=False)
@@ -344,8 +348,15 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
         )
 
 
+    trial_executor = MyRayTrialExecutor(get_queue=queue, init_resources=Resources(cpu=1,gpu=1))
+
+    return
+
     queue = Queue()
     queue.put(Resources(cpu=1,gpu=1))
+
+
+
 
 
     analysis = tune.run(
@@ -361,7 +372,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
                 "p4": tune.choice([0,1]),
                 "p5": tune.choice([0,1])},
         
-        trial_executor=MyRayTrialExecutor(get_queue=queue, init_resources=Resources(cpu=1,gpu=1)),
+        trial_executor=trial_executor,
     )
         
 
