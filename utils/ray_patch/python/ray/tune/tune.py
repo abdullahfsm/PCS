@@ -416,6 +416,8 @@ def run(
 
     print(type(trial_executor))
     print(hasattr(trial_executor, "_get_queue"))
+    
+
 
 
     if isinstance(run_or_experiment, list):
