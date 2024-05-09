@@ -52,6 +52,13 @@ class TrialScheduler:
 
         raise NotImplementedError
 
+
+    def on_trial_start(self, trial_runner: "trial_runner.TrialRunner",
+                     trial: Trial):
+        """Called when a new trial starts."""
+        pass
+
+
     def on_trial_error(self, trial_runner: "trial_runner.TrialRunner",
                        trial: Trial):
         """Notification for the error of trial.

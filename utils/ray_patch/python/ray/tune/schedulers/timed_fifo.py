@@ -46,9 +46,16 @@ class TimedFIFOScheduler(FIFOScheduler):
 
     def on_trial_add(self, trial_runner: "trial_runner.TrialRunner",
                      trial: Trial):
+        pass
+
+
+    def on_trial_start(self, trial_runner: "trial_runner.TrialRunner",
+                     trial: Trial):
         self._trial_id_to_time_elapsed[trial.trial_id] = 0
         self._trial_id_to_last_event_time[trial.trial_id] = datetime.now()
         self._trial_id_to_budget[trial.trial_id] = self._budget
+
+
 
 
     def on_trial_result(self, trial_runner: "trial_runner.TrialRunner",

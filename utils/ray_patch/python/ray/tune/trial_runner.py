@@ -655,6 +655,9 @@ class TrialRunner:
             """Helper function to start trial and call callbacks"""
             with warn_if_slow("start_trial"):
                 if self.trial_executor.start_trial(trial):
+
+                    # added to see when it starts
+                    self._scheduler_alg.on_trial_start(pass)
                     self._callbacks.on_trial_start(
                         iteration=self._iteration,
                         trials=self._trials,
