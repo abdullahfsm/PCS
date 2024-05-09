@@ -67,11 +67,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._get_queue = get_queue
 
         super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
-
         self._avail_resources = init_resources
 
 
-        self._update_avail_resources()
 
 
     def _update_avail_resources(self, num_retries=5):
