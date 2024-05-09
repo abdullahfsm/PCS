@@ -251,7 +251,7 @@ def train_cifar10(config: dict, checkpoint_dir=None):
 
 @ray.remote
 def schedule_q_put(sleep_time, queue, item):
-    sleep(sleep_time)
+    time.sleep(sleep_time)
     queue.put(item)
 
 
