@@ -74,7 +74,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
     def _update_avail_resources(self, num_retries=5):
 
-        if self._get_queue:
+        if self._get_queue is not None:
             try:
                 resources = self._get_queue.get(block=False)
                 if not isinstance(resources, Resources):
