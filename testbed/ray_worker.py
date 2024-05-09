@@ -114,7 +114,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
             print(f"committing resource to trial: {trial.trial_id}")
 
-            start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+            
+            start_val = self._start_trial(trial, checkpoint, train=train)
+            # start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
             print(f"start_val: {start_val}")
 
             return start_val
