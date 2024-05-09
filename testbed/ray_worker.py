@@ -371,10 +371,10 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
     trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
 
-    trial_scheduler = ResourceChangingScheduler(
-        base_scheduler=trial_scheduler,
-        resources_allocation_function=example_resources_allocation_function
-        )
+    # trial_scheduler = ResourceChangingScheduler(
+    #     base_scheduler=trial_scheduler,
+    #     resources_allocation_function=example_resources_allocation_function
+    #     )
 
 
     queue = Queue()
