@@ -656,8 +656,10 @@ class TrialRunner:
             with warn_if_slow("start_trial"):
                 if self.trial_executor.start_trial(trial):
 
-                    # added to see when it starts
-                    self._scheduler_alg.on_trial_start(pass)
+                    # (ABD) added to see when it starts
+                    self._scheduler_alg.on_trial_start(self, trial)
+
+
                     self._callbacks.on_trial_start(
                         iteration=self._iteration,
                         trials=self._trials,
