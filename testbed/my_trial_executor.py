@@ -37,6 +37,14 @@ from ray.util.annotations import DeveloperAPI
 
 from ray.tune.ray_trial_executor import *
 from ray.util.queue import Queue, Empty
+from ray.tune.ray_trial_executor import (
+    _ActorClassCache,
+    _class_cache,
+    _LocalWrapper,
+    _TrialCleanup,
+    _to_gb
+)
+
 
 class MyRayTrialExecutor(RayTrialExecutor):
     """An implementation of MyRayTrialExecutor based on RayTrialExecutor."""
