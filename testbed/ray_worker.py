@@ -51,13 +51,13 @@ class MyRayTrialExecutor(RayTrialExecutor):
     """An implementation of MyRayTrialExecutor based on RayTrialExecutor."""
 
     def __init__(self,
+                get_queue,
+                set_queue,
                 queue_trials: bool = False,
                 reuse_actors: bool = False,
                 result_buffer_length: Optional[int] = None,
                 refresh_period: Optional[float] = None,
                 wait_for_placement_group: Optional[float] = None,
-                get_queue = None,
-                set_queue = None,
                 init_resources: Resources = Resources(cpu=0,gpu=0)):
         
 
@@ -314,11 +314,25 @@ def example_resources_allocation_function(
     # Get the number of GPUs available in total (not just free)
     total_available_gpus = (trial_runner.trial_executor._avail_resources.gpu)
 
+    get_trial_idx = lambda t: int(t.trial_id.split('_')[-1])
+
+
+    all_trials = trial_runner.get_live_trials()
+    trial_idxs = [get_trial_idx(t) for t in all_trials]
+
+    gpu_allocation = [0] * len(all_trials)
+
+    per_trial_gpu_allocation = 1
+
+    for trial_idx in len(trial_idxs):
+        allocation = min(per_trial_gpu_allocation, total_available_gpus)
+        gpu_allocation[trial_idx] = allocation
+        total_available_gpus -= allocation
 
 
     # trial_runner.trial_executor.resources
     print("++++++++++++++++++++++")
-    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {total_available_gpus}")
+    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {total_available_gpus} and has been assigned {gpu_allocation[get_trial_idx(trial)]}")
     print("++++++++++++++++++++++")
 
 
@@ -327,7 +341,7 @@ def example_resources_allocation_function(
     #     min_cpu,
     #     total_available_cpus // len(trial_runner.get_live_trials()))
     # Assign new CPUs to the trial in a PlacementGroupFactory
-    return PlacementGroupFactory([{"CPU": 1, "GPU": 1}])
+    return PlacementGroupFactory([{"CPU": 1 if get_trial_idx(trial) > 0 else 0, "GPU": get_trial_idx(trial)}])
     # return PlacementGroupFactory([{"CPU": 1, "GPU": total_available_gpus//len(trial_runner.get_live_trials())}])
 
 
@@ -353,13 +367,13 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
     queue.put(Resources(cpu=1,gpu=1))
 
 
-    trial_executor = MyRayTrialExecutor(get_queue=queue, init_resources=Resources(cpu=1,gpu=1))
+    trial_executor = MyRayTrialExecutor(get_queue=queue, set_queue=Queue, init_resources=Resources(cpu=1,gpu=1))
 
     analysis = tune.run(
         train_cifar10,
         resources_per_trial=PlacementGroupFactory([{"CPU": 1, "GPU": 1}]),
-        name="app_0",
-        trial_name_creator=lambda T: "app_%d_%s" % (0, T.trial_id),
+        name=f"app_{app.app_id}",
+        trial_name_creator=lambda T: "app_%d_%s" % (app.app_id, T.trial_id),
         scheduler=trial_scheduler,
         num_samples=num_samples,
         config={"p1": tune.choice([0,1]),
