@@ -334,7 +334,7 @@ def example_resources_allocation_function(
 
     # trial_runner.trial_executor.resources
     print("++++++++++++++++++++++")
-    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {total_available_gpus} and has been assigned {gpu_allocation[get_trial_idx(trial)]}")
+    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {trial_runner.trial_executor._avail_resources.gpu} and has been assigned {gpu_allocation[get_trial_idx(trial)]}")
     print("++++++++++++++++++++++")
 
 
