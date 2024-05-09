@@ -95,8 +95,10 @@ class MyRayTrialExecutor(RayTrialExecutor):
             #     custom_resources=custom_resources)
             # self._last_resource_refresh = time.time()            
         else:
-            if ray.is_initialized():
-                super(MyRayTrialExecutor, self)._update_avail_resources()
+            raise ValueError("self._get_queue is not initialized")
+        # else:
+        #     if ray.is_initialized():
+        #         super(MyRayTrialExecutor, self)._update_avail_resources()
 
 class App(object):
     """docstring for App"""
