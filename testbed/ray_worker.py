@@ -29,7 +29,7 @@ from ray.tune.integration.keras import TuneReportCallback
 from ray.tune.integration.keras import TuneReportCheckpointCallback
 
 
-from ray.tune.ray_trial_executor import RayTrialExecutor, noop_logger_creator, _class_cache
+from ray.tune.ray_trial_executor import RayTrialExecutor, noop_logger_creator, _class_cache, logger
 
 from filelock import FileLock
 import os
