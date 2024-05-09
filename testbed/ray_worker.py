@@ -35,7 +35,7 @@ from filelock import FileLock
 import os
 
 
-from ray.util.queue import Queue
+from ray.util.queue import Queue, Empty
 
 from common import Event
 
