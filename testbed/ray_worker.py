@@ -105,7 +105,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         has_resources =  self._has_resources(trial.resources)
 
         if has_resources:
-            self._committed_resources(trial.resources)
+            self._commit_resources(trial.resources)
             return super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
         return False
 
