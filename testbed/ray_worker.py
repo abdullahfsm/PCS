@@ -42,6 +42,8 @@ from common import Event
 import time
 
 
+import copy
+
 
 CHECKPOINT_FILENAME="my_model.keras"
 
