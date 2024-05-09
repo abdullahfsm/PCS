@@ -1,4 +1,13 @@
-from typing import Union, Dict, Any
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Union,
+    Any,
+)
+
 import ray
 from ray import tune
 import numpy as np
@@ -284,6 +293,12 @@ def train_cifar10(config: dict, checkpoint_dir=None):
             ])
 
 
+@ray.remote
+def schedule_q_put(sleep_time, queue, item):
+    sleep(sleep_time)
+    queue.put(item)
+
+
 def example_resources_allocation_function(
         trial_runner: "trial_runner.TrialRunner", trial: Trial,
         result: Dict[str, Any], scheduler: "ResourceChangingScheduler"
@@ -293,6 +308,13 @@ def example_resources_allocation_function(
 
     # Get the number of GPUs available in total (not just free)
     total_available_gpus = (trial_runner.trial_executor._avail_resources.gpu)
+
+
+
+    # trial_runner.trial_executor.resources
+    print("++++++++++++++++++++++")
+    print(f"Trial_id: {trial.trial_id} has resources: {trial.resources} and placement group: {trial.placement_group_factory} and total gpus are: {total_available_gpus}")
+    print("++++++++++++++++++++++")
 
 
     # # Divide the free CPUs among all live trials
