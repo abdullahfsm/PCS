@@ -299,6 +299,86 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
 
 
+    def _stop_trial(self,
+                    trial: Trial,
+                    error=False,
+                    error_msg=None,
+                    destroy_pg_if_cannot_replace=True):
+        """Stops this trial.
+
+        Stops this trial, releasing all allocating resources. If stopping the
+        trial fails, the run will be marked as terminated in error, but no
+        exception will be thrown.
+
+        If the placement group will be used right away
+        (destroy_pg_if_cannot_replace=False), we do not remove its placement
+        group (or a surrogate placement group).
+
+        Args:
+            error (bool): Whether to mark this trial as terminated in error.
+            error_msg (str): Optional error message.
+
+        """
+        self.set_status(trial, Trial.ERROR if error else Trial.TERMINATED)
+        self._trial_just_finished = True
+        trial.set_location(Location())
+
+        try:
+            trial.write_error_log(error_msg)
+            if hasattr(trial, "runner") and trial.runner:
+                if (not error and self._reuse_actors
+                        and (len(self._cached_actor_pg) <
+                             (self._cached_actor_pg.maxlen or float("inf")))):
+                    logger.debug("Reusing actor for %s", trial.runner)
+                    # Move PG into cache (disassociate from trial)
+                    pg = self._pg_manager.cache_trial_pg(trial)
+                    if pg or not trial.uses_placement_groups:
+                        # True if a placement group was replaced
+                        self._cached_actor_pg.append((trial.runner, pg))
+                        should_destroy_actor = False
+                    else:
+                        # False if no placement group was replaced. This should
+                        # only be the case if there are no more trials with
+                        # this placement group factory to run
+                        logger.debug(
+                            "Could not cache of trial {trial} actor for "
+                            "reuse, as there are no pending trials "
+                            "requiring its resources.")
+                        should_destroy_actor = True
+                else:
+                    should_destroy_actor = True
+
+                if should_destroy_actor:
+                    logger.debug("Trial %s: Destroying actor.", trial)
+
+                    # Try to return the placement group for other trials to use
+
+                    try:
+
+                        self._pg_manager.return_pg(trial,
+                                                   destroy_pg_if_cannot_replace)
+                    except Exception as e:
+                        print(f"WarningError: {e}")
+
+                    with self._change_working_directory(trial):
+                        self._trial_cleanup.add(trial, actor=trial.runner)
+
+                if trial in self._staged_trials:
+                    self._staged_trials.remove(trial)
+                else:
+                    print(f"trial wasn't staged")
+
+        except Exception:
+            logger.exception("Trial %s: Error stopping runner.", trial)
+            self.set_status(trial, Trial.ERROR)
+        finally:
+            trial.set_runner(None)
+
+
+
+
+
+
     def _update_avail_resources(self, num_retries=5):
 
         if self._get_queue is not None:
