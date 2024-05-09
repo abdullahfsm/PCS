@@ -72,6 +72,16 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._avail_resources = init_resources
 
 
+    def start_trial(self,
+                    trial: Trial,
+                    checkpoint: Optional[Checkpoint] = None,
+                    train: bool = True) -> bool:
+
+
+        print(f"DEBUG: trial_id: {trial.trial_id} has_resources?: {self.has_resources_for_trial(trial)}")
+
+        super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+
     def _update_avail_resources(self, num_retries=5):
 
         if self._get_queue is not None:
