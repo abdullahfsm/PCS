@@ -157,8 +157,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         _actor_cls = _class_cache.get(trainable_cls)
 
 
-        # if trial.uses_placement_groups:
-        if False:
+        if trial.uses_placement_groups:
             if not self._pg_manager.has_ready(trial, update=True):
                 if trial not in self._staged_trials:
                     if self._pg_manager.stage_trial_pg(trial):
@@ -189,10 +188,15 @@ class MyRayTrialExecutor(RayTrialExecutor):
                             break
                         time.sleep(0.1)
                 else:
+                    # print(f"DEBUG: cond(1), {self._wait_for_pg} just_staged: {just_staged} self._trial_just_finished_before: {self._trial_just_finished_before}")
+                    print(f"DEBUG: cond (1)")
+
                     return None
 
             if not self._pg_manager.has_ready(trial):
                 # PG may have become ready during waiting period
+
+                print(f"DEBUG: cond (2)")
                 return None
 
             full_actor_class = self._pg_manager.get_full_actor_cls(
