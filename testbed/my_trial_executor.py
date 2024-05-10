@@ -97,10 +97,11 @@ class MyRayTrialExecutor(RayTrialExecutor):
         """Before step() is called, update the available resources."""
         self._update_avail_resources()
 
+        trials = self.get_running_trials()
 
-        t, *_ = self.get_running_trials()
-
-        print(type(t))
+        if trials:
+            t, *_ = trials
+            print(type(t))
 
         self._demand = sum([t.resources.gpu for t in self._running]+
             [t.resources.gpu for t in self._pending]+
