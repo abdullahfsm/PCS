@@ -188,8 +188,13 @@ class MyRayTrialExecutor(RayTrialExecutor):
                             break
                         time.sleep(0.1)
                 else:
-                    # print(f"DEBUG: cond(1), {self._wait_for_pg} just_staged: {just_staged} self._trial_just_finished_before: {self._trial_just_finished_before}")
-                    print(f"DEBUG: cond (1)")
+                    print(f"""DEBUG: cond(1),
+                            self._wait_for_pg: {self._wait_for_pg}
+                            just_staged: {just_staged}
+                            self._trial_just_finished_before: {self._trial_just_finished_before}
+                            self.get_running_trials(): {self.get_running_trials()}
+                            """)
+                    # print(f"DEBUG: cond (1)")
 
                     return None
 
