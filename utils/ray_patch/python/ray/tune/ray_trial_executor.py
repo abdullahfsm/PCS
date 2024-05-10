@@ -496,9 +496,7 @@ class RayTrialExecutor(TrialExecutor):
         if runner is None:
             runner = self._setup_remote_runner(trial)
             if not runner:
-                print(f"Runner not set")
                 return False
-            print(f"Runner is finally set")
         trial.set_runner(runner)
         self._notify_trainable_of_new_resources_if_needed(trial)
         self.restore(trial, checkpoint)
