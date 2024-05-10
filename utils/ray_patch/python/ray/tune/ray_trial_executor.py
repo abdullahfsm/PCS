@@ -364,20 +364,17 @@ class RayTrialExecutor(TrialExecutor):
                         time.sleep(0.1)
                 else:
 
-                    print(f"""DEBUG: cond(1),
-                            self._wait_for_pg: {self._wait_for_pg}
-                            just_staged: {just_staged}
-                            self._trial_just_finished_before: {self._trial_just_finished_before}
-                            self.get_running_trials(): {self.get_running_trials()}
-                            """)
+                    # print(f"""DEBUG: cond(1),
+                    #         self._wait_for_pg: {self._wait_for_pg}
+                    #         just_staged: {just_staged}
+                    #         self._trial_just_finished_before: {self._trial_just_finished_before}
+                    #         self.get_running_trials(): {self.get_running_trials()}
+                    #         """)
 
                     return None
 
             if not self._pg_manager.has_ready(trial):
                 # PG may have become ready during waiting period
-                
-                print(f"DEBUG: cond (2)")
-
                 return None
 
             full_actor_class = self._pg_manager.get_full_actor_cls(
