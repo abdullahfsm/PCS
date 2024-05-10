@@ -172,6 +172,46 @@ class Resources(
                          extra_gpu, extra_memory, extra_object_store_memory,
                          new_custom_res, extra_custom_res)
 
+
+    def __add__(self, other)
+        cpu = self.cpu + other.cpu
+        gpu = self.gpu + other.gpu
+        memory = self.memory + other.memory
+        object_store_memory = (
+            self.object_store_memory + other.object_store_memory)
+        extra_cpu = self.extra_cpu + other.extra_cpu
+        extra_gpu = self.extra_gpu + other.extra_gpu
+        extra_memory = self.extra_memory + other.extra_memory
+        extra_object_store_memory = (self.extra_object_store_memory +
+                                     other.extra_object_store_memory)
+        all_resources = set(self.custom_resources).union(
+            set(other.custom_resources))
+        new_custom_res = {
+            k: self.custom_resources.get(k, 0) +
+            other.custom_resources.get(k, 0)
+            for k in all_resources
+        }
+        extra_custom_res = {
+            k: self.extra_custom_resources.get(k, 0) +
+            other.extra_custom_resources.get(k, 0)
+            for k in all_resources
+        }
+        return Resources(cpu, gpu, memory, object_store_memory, extra_cpu,
+                         extra_gpu, extra_memory, extra_object_store_memory,
+                         new_custom_res, extra_custom_res)
+
+
+    def __lt__(self, other)
+        return self.gpu < other.gpu 
+    def __le__(self, other)
+        return self.gpu <= other.gpu 
+    def __gt__(self, other)
+        return self.gpu > other.gpu 
+    def __ge__(self, other)
+        return self.gpu >= other.gpu 
+    def __eq__(self, other)
+        return self.gpu == other.gpu 
+
     def to_json(self):
         return resources_to_json(self)
 

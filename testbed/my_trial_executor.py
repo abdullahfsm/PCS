@@ -69,7 +69,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._preempted = {}
         self._pending = {}
 
-        self._demand = 0
+        self._demand = Resources(cpu=0,gpu=0)
 
 
     def debug_string(self) -> str:
@@ -91,16 +91,39 @@ class MyRayTrialExecutor(RayTrialExecutor):
             return "Resources requested: ?"
 
 
-
+    def _update_demand(self):
+        self._demand = Resources(cpu=0,gpu=0)
+        
+        for lst in self._running.values() + self._pending.values() + self._preempted.values() + self._paused.values():
+            self._demand = Resources.add(self._demand, t.resources)
+        
 
     def on_step_begin(self, trials: List[Trial]) -> None:
         """Before step() is called, update the available resources."""
         self._update_avail_resources()
+        self._update_demand()
 
-        self._demand = sum([t.resources.gpu for t in self._running.values()]+
-            [t.resources.gpu for t in self._pending.values()]+
-            [t.resources.gpu for t in self._preempted.values()]+
-            [t.resources.gpu for t in self._paused.values()])
+        # TODO: define preempt, unpreempt state, define preempt and unpreempt functions
+        if self._avail_resources >= self._demand:
+            if self._demand > self._committed_resources:
+                # start to unpause/unpreempt d-c trials
+                pass
+            elif self._demand == self._committed_resources:
+                # do nothing
+                pass
+            else:
+                raise ValueError("Demand is less than committed resources")
+        else:
+            if self._avail_resources > self._committed_resources:
+                # unpause unpreempt r-c trials
+                pass
+            elif self._avail_resources == self._committed_resources:
+                # do nothing
+                pass
+            else:
+                # preempt c-r trials
+                # only point where preemption happens
+                pass
 
 
         self._trial_just_finished_before = self._trial_just_finished
