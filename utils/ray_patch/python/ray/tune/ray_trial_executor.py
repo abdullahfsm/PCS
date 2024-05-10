@@ -363,10 +363,21 @@ class RayTrialExecutor(TrialExecutor):
                             break
                         time.sleep(0.1)
                 else:
+
+                    print(f"""DEBUG: cond(1),
+                            self._wait_for_pg: {self._wait_for_pg}
+                            just_staged: {just_staged}
+                            self._trial_just_finished_before: {self._trial_just_finished_before}
+                            self.get_running_trials(): {self.get_running_trials()}
+                            """)
+
                     return None
 
             if not self._pg_manager.has_ready(trial):
                 # PG may have become ready during waiting period
+                
+                print(f"DEBUG: cond (2)")
+
                 return None
 
             full_actor_class = self._pg_manager.get_full_actor_cls(
@@ -485,6 +496,7 @@ class RayTrialExecutor(TrialExecutor):
         if runner is None:
             runner = self._setup_remote_runner(trial)
             if not runner:
+                print(f"Runner not set")
                 return False
         trial.set_runner(runner)
         self._notify_trainable_of_new_resources_if_needed(trial)
