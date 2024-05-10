@@ -170,6 +170,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
             return start_val
         
+        print(f"added trial.trial_id: {trial.trial_id} to pending")
         self._pending[trial.trial_id] = trial
         return False
 
