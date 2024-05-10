@@ -168,13 +168,11 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 if trial.trial_id in self._pending:
                     self._pending.pop(trial.trial_id)
             else:
-                print(f"Unable to start {trial.trial_id} even though enough resources available: {Resources.subtract(self._avail_resources,self._committed_resources)}")
+                pass
+                # print(f"Unable to start {trial.trial_id} even though enough resources available: {Resources.subtract(self._avail_resources,self._committed_resources)}")
 
 
             return start_val
-        
-        print(f"added trial.trial_id: {trial.trial_id} to pending")
-        raise ValueError("Insufficient resources")
         self._pending[trial.trial_id] = trial
         return False
 
