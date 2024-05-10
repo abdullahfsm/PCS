@@ -98,10 +98,10 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._update_avail_resources()
 
 
-        self._demand = sum([t.gpu for t in self._running]+
-            [t.gpu for t in self._pending]+
-            [t.gpu for t in self._preempted]+
-            [t.gpu for t in self._paused])
+        self._demand = sum([t.resources.gpu for t in self._running]+
+            [t.resources.gpu for t in self._pending]+
+            [t.resources.gpu for t in self._preempted]+
+            [t.resources.gpu for t in self._paused])
 
 
         self._trial_just_finished_before = self._trial_just_finished
