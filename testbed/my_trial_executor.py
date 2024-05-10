@@ -69,6 +69,8 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._preempted = {}
         self._pending = {}
 
+        self._demand = 0
+
 
     def debug_string(self) -> str:
         """Returns a human readable message for printing to the console."""
@@ -82,7 +84,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                         self._committed_resources.gpu,self._avail_resources.gpu,
                         _to_gb(self._committed_resources.memory),_to_gb(self._avail_resources.memory),
                         _to_gb(self._committed_resources.object_store_memory),_to_gb(self._avail_resources.object_store_memory),
-                        len(self._running)+len(self._pending)+len(self._preempted)+len(self._paused),)
+                        self._demand,)
                       )
             return status
         else:
@@ -94,6 +96,13 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def on_step_begin(self, trials: List[Trial]) -> None:
         """Before step() is called, update the available resources."""
         self._update_avail_resources()
+
+
+        self._demand = sum([t.gpu for t in self._running]+
+            [t.gpu for t in self._pending]+
+            [t.gpu for t in self._preempted]+
+            [t.gpu for t in self._paused])
+
 
         self._trial_just_finished_before = self._trial_just_finished
         self._trial_just_finished = False
