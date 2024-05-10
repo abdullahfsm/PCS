@@ -324,8 +324,8 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
     analysis = tune.run(
         train_cifar10,
-        # resources_per_trial=PlacementGroupFactory([{"CPU": 1, "GPU": 1}]),
-        resources_per_trial={'cpu': 1, 'gpu': 1},
+        resources_per_trial=PlacementGroupFactory([{"CPU": 1, "GPU": 1}]),
+        # resources_per_trial={'cpu': 1, 'gpu': 1},
         name=f"app_{app.app_id}",
         trial_name_creator=lambda T: "app_%d_%s" % (app.app_id, T.trial_id),
         scheduler=trial_scheduler,
