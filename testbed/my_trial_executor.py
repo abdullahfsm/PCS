@@ -67,6 +67,10 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         self._avail_resources = init_resources
 
+        self._preempted = {}
+        self._pending = {}
+
+
         print(f"avail_resources: {self._avail_resources.gpu}")
         print(f"committed_resources: {self._committed_resources.gpu}")
 
@@ -84,7 +88,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                         self._committed_resources.gpu,self._avail_resources.gpu,
                         _to_gb(self._committed_resources.memory),_to_gb(self._avail_resources.memory),
                         _to_gb(self._committed_resources.object_store_memory),_to_gb(self._avail_resources.object_store_memory),
-                        len(self._running),)
+                        len(self._running)+len(self._pending),)
                       )
             return status
         else:
@@ -153,12 +157,18 @@ class MyRayTrialExecutor(RayTrialExecutor):
         has_resources =  self.has_resources_for_trial(trial)
 
         if has_resources:
+
+
             start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
 
             if start_val:
                 print(f"committing resource to trial: {trial.trial_id}")
                 self._commit_resources(trial.resources)
+                self._pending.pop(trial)
+
             return start_val
+        
+        self._pending.add(trial)
         return False
 
 
