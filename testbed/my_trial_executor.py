@@ -164,11 +164,13 @@ class MyRayTrialExecutor(RayTrialExecutor):
             if start_val:
                 print(f"committing resource to trial: {trial.trial_id}")
                 self._commit_resources(trial.resources)
-                self._pending.pop(trial)
+                
+                if trial.trial_id in self._pending:
+                    self._pending.pop(trial.trial_id)
 
             return start_val
         
-        self._pending.add(trial)
+        self._pending[trial.trial_id] = trial
         return False
 
 
