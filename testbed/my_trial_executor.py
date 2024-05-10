@@ -70,7 +70,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         print(f"avail_resources: {self._avail_resources.gpu}")
         print(f"committed_resources: {self._committed_resources.gpu}")
 
-    def _has_resources(self, resources: Resources) -> bool:
+    def has_resources(self, resources: Resources) -> bool:
         """Returns whether this runner has at least the specified resources.
 
         This refreshes the Ray cluster resources if the time since last update
@@ -98,28 +98,17 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         return False
 
-    def start_trial(self,
-                    trial: Trial,
-                    checkpoint: Optional[Checkpoint] = None,
-                    train: bool = True) -> bool:
+    def has_resources_for_trial(self, trial: Trial) -> bool:
+        """Returns whether this runner has resources available for this trial.
 
-        
-        has_resources =  self._has_resources(trial.resources)
+        Args:
+            trial: Trial object which should be scheduled.
 
-        # print(f"trial_id: {trial.trial_id}, _avail_resources: {self._avail_resources.gpu}, committed_resources: {self._committed_resources.gpu}, requested: {trial.resources.gpu}, has_resources: {has_resources}")
+        Returns:
+            boolean
 
-        if has_resources:
-            self._commit_resources(trial.resources)
-
-            print(f"committing resource to trial: {trial.trial_id}")
-
-            
-            start_val = self._start_trial(trial, checkpoint, train=train)
-            # start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
-            print(f"start_val: {start_val}")
-
-            return start_val
-        return False
+        """
+        return self.has_resources(trial.resources)
 
 
     def _setup_remote_runner(self, trial):
@@ -243,49 +232,26 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
 
 
-    def _start_trial(self, trial, checkpoint=None, runner=None,
-                     train=True) -> bool:
-        """Starts trial and restores last result if trial was paused.
+    def start_trial(self,
+                    trial: Trial,
+                    checkpoint: Optional[Checkpoint] = None,
+                    train: bool = True) -> bool:
 
-        Args:
-            trial (Trial): The trial to start.
-            checkpoint (Optional[Checkpoint]): The checkpoint to restore from.
-                If None, and no trial checkpoint exists, the trial is started
-                from the beginning.
-            runner (Trainable): The remote runner to use. This can be the
-                cached actor. If None, a new runner is created.
-            train (bool): Whether or not to start training.
+        
+        has_resources =  self.has_resources_for_trial(trial)
 
-        Returns:
-            True if trial was started successfully, False otherwise.
+        if has_resources:
+            self._commit_resources(trial.resources)
 
-        See `RayTrialExecutor.restore` for possible errors raised.
-        """
-        prior_status = trial.status
-        self.set_status(trial, Trial.PENDING)
-        if runner is None:
-            runner = self._setup_remote_runner(trial)
-            if not runner:
-                print("unable to set runner!")
-                return False
-        trial.set_runner(runner)
-        self._notify_trainable_of_new_resources_if_needed(trial)
-        self.restore(trial, checkpoint)
-        self.set_status(trial, Trial.RUNNING)
+            print(f"committing resource to trial: {trial.trial_id}")
 
-        if trial in self._staged_trials:
-            self._staged_trials.remove(trial)
+            
+            start_val = self._start_trial(trial, checkpoint, train=train)
+            # start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+            print(f"start_val: {start_val}")
 
-        previous_run = self._find_item(self._paused, trial)
-        if prior_status == Trial.PAUSED and previous_run:
-            # If Trial was in flight when paused, self._paused stores result.
-            self._paused.pop(previous_run[0])
-            self._running[previous_run[0]] = trial
-        elif train and not trial.is_restoring:
-            self._train(trial)
-        return True
-
-
+            return start_val
+        return False
 
 
     def stop_trial(self,
@@ -299,84 +265,80 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
 
 
-    def _stop_trial(self,
-                    trial: Trial,
-                    error=False,
-                    error_msg=None,
-                    destroy_pg_if_cannot_replace=True):
-        """Stops this trial.
+    # def _stop_trial(self,
+    #                 trial: Trial,
+    #                 error=False,
+    #                 error_msg=None,
+    #                 destroy_pg_if_cannot_replace=True):
+    #     """Stops this trial.
 
-        Stops this trial, releasing all allocating resources. If stopping the
-        trial fails, the run will be marked as terminated in error, but no
-        exception will be thrown.
+    #     Stops this trial, releasing all allocating resources. If stopping the
+    #     trial fails, the run will be marked as terminated in error, but no
+    #     exception will be thrown.
 
-        If the placement group will be used right away
-        (destroy_pg_if_cannot_replace=False), we do not remove its placement
-        group (or a surrogate placement group).
+    #     If the placement group will be used right away
+    #     (destroy_pg_if_cannot_replace=False), we do not remove its placement
+    #     group (or a surrogate placement group).
 
-        Args:
-            error (bool): Whether to mark this trial as terminated in error.
-            error_msg (str): Optional error message.
+    #     Args:
+    #         error (bool): Whether to mark this trial as terminated in error.
+    #         error_msg (str): Optional error message.
 
-        """
-        self.set_status(trial, Trial.ERROR if error else Trial.TERMINATED)
-        self._trial_just_finished = True
-        trial.set_location(Location())
+    #     """
+    #     self.set_status(trial, Trial.ERROR if error else Trial.TERMINATED)
+    #     self._trial_just_finished = True
+    #     trial.set_location(Location())
 
-        try:
-            trial.write_error_log(error_msg)
-            if hasattr(trial, "runner") and trial.runner:
-                if (not error and self._reuse_actors
-                        and (len(self._cached_actor_pg) <
-                             (self._cached_actor_pg.maxlen or float("inf")))):
-                    logger.debug("Reusing actor for %s", trial.runner)
-                    # Move PG into cache (disassociate from trial)
-                    pg = self._pg_manager.cache_trial_pg(trial)
-                    if pg or not trial.uses_placement_groups:
-                        # True if a placement group was replaced
-                        self._cached_actor_pg.append((trial.runner, pg))
-                        should_destroy_actor = False
-                    else:
-                        # False if no placement group was replaced. This should
-                        # only be the case if there are no more trials with
-                        # this placement group factory to run
-                        logger.debug(
-                            "Could not cache of trial {trial} actor for "
-                            "reuse, as there are no pending trials "
-                            "requiring its resources.")
-                        should_destroy_actor = True
-                else:
-                    should_destroy_actor = True
+    #     try:
+    #         trial.write_error_log(error_msg)
+    #         if hasattr(trial, "runner") and trial.runner:
+    #             if (not error and self._reuse_actors
+    #                     and (len(self._cached_actor_pg) <
+    #                          (self._cached_actor_pg.maxlen or float("inf")))):
+    #                 logger.debug("Reusing actor for %s", trial.runner)
+    #                 # Move PG into cache (disassociate from trial)
+    #                 pg = self._pg_manager.cache_trial_pg(trial)
+    #                 if pg or not trial.uses_placement_groups:
+    #                     # True if a placement group was replaced
+    #                     self._cached_actor_pg.append((trial.runner, pg))
+    #                     should_destroy_actor = False
+    #                 else:
+    #                     # False if no placement group was replaced. This should
+    #                     # only be the case if there are no more trials with
+    #                     # this placement group factory to run
+    #                     logger.debug(
+    #                         "Could not cache of trial {trial} actor for "
+    #                         "reuse, as there are no pending trials "
+    #                         "requiring its resources.")
+    #                     should_destroy_actor = True
+    #             else:
+    #                 should_destroy_actor = True
 
-                if should_destroy_actor:
-                    logger.debug("Trial %s: Destroying actor.", trial)
+    #             if should_destroy_actor:
+    #                 logger.debug("Trial %s: Destroying actor.", trial)
 
-                    # Try to return the placement group for other trials to use
+    #                 # Try to return the placement group for other trials to use
 
-                    try:
+    #                 try:
 
-                        self._pg_manager.return_pg(trial,
-                                                   destroy_pg_if_cannot_replace)
-                    except Exception as e:
-                        print(f"WarningError: {e}")
+    #                     self._pg_manager.return_pg(trial,
+    #                                                destroy_pg_if_cannot_replace)
+    #                 except Exception as e:
+    #                     print(f"WarningError: {e}")
 
-                    with self._change_working_directory(trial):
-                        self._trial_cleanup.add(trial, actor=trial.runner)
+    #                 with self._change_working_directory(trial):
+    #                     self._trial_cleanup.add(trial, actor=trial.runner)
 
-                if trial in self._staged_trials:
-                    self._staged_trials.remove(trial)
-                else:
-                    print(f"trial wasn't staged")
+    #             if trial in self._staged_trials:
+    #                 self._staged_trials.remove(trial)
+    #             else:
+    #                 print(f"trial wasn't staged")
 
-        except Exception:
-            logger.exception("Trial %s: Error stopping runner.", trial)
-            self.set_status(trial, Trial.ERROR)
-        finally:
-            trial.set_runner(None)
-
-
-
-
+    #     except Exception:
+    #         logger.exception("Trial %s: Error stopping runner.", trial)
+    #         self.set_status(trial, Trial.ERROR)
+    #     finally:
+    #         trial.set_runner(None)
 
 
     def _update_avail_resources(self, num_retries=5):
