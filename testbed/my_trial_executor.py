@@ -59,7 +59,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 wait_for_placement_group: Optional[float] = None,
                 init_resources: Resources = Resources(cpu=0,gpu=0)):
         
-
         
         self._set_queue = set_queue
         self._get_queue = get_queue
@@ -69,11 +68,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         self._preempted = {}
         self._pending = {}
-
-
-        print(f"avail_resources: {self._avail_resources.gpu}")
-        print(f"committed_resources: {self._committed_resources.gpu}")
-
 
 
     def debug_string(self) -> str:
@@ -88,7 +82,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                         self._committed_resources.gpu,self._avail_resources.gpu,
                         _to_gb(self._committed_resources.memory),_to_gb(self._avail_resources.memory),
                         _to_gb(self._committed_resources.object_store_memory),_to_gb(self._avail_resources.object_store_memory),
-                        len(self._running)+len(self._pending),)
+                        len(self._running)+len(self._pending)+len(self._preempted)+len(self._paused),)
                       )
             return status
         else:
@@ -100,8 +94,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def on_step_begin(self, trials: List[Trial]) -> None:
         """Before step() is called, update the available resources."""
         self._update_avail_resources()
-
-
 
         self._trial_just_finished_before = self._trial_just_finished
         self._trial_just_finished = False
@@ -158,7 +150,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         if has_resources:
 
-
             start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
 
             if start_val:
@@ -167,10 +158,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 
                 if trial.trial_id in self._pending:
                     self._pending.pop(trial.trial_id)
-            else:
-                pass
-                # print(f"Unable to start {trial.trial_id} even though enough resources available: {Resources.subtract(self._avail_resources,self._committed_resources)}")
-
 
             return start_val
         self._pending[trial.trial_id] = trial
@@ -207,19 +194,5 @@ class MyRayTrialExecutor(RayTrialExecutor):
             self._last_resource_refresh = time.time()
             self._resources_initialized = True
 
-
-
-
-            # self._avail_resources = Resources(
-            #     int(num_cpus),
-            #     int(num_gpus),
-            #     memory=int(memory),
-            #     object_store_memory=int(object_store_memory),
-            #     custom_resources=custom_resources)
-            # self._last_resource_refresh = time.time()            
         else:
             raise ValueError("self._get_queue is not initialized")
-        # else:
-        #     if ray.is_initialized():
-        #         super(MyRayTrialExecutor, self)._update_avail_resources()
-
