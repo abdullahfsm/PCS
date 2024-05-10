@@ -70,6 +70,34 @@ class MyRayTrialExecutor(RayTrialExecutor):
         print(f"avail_resources: {self._avail_resources.gpu}")
         print(f"committed_resources: {self._committed_resources.gpu}")
 
+
+
+    def debug_string(self) -> str:
+        """Returns a human readable message for printing to the console."""
+
+        
+
+        if self._resources_initialized:
+            status = ("Resources requested: {}/{} CPUs, {}/{} GPUs, "
+                      "{}/{} GiB heap, {}/{} GiB objects".format(
+                          self._committed_resources.cpu, self._avail_resources.cpu,
+                          self._committed_resources.gpu,self._avail_resources.gpu,
+                          _to_gb(self._committed_resources.memory),_to_gb(self._avail_resources.memory),
+                          _to_gb(self._committed.object_store_memory),_to_gb(self._avail_resources.object_store_memory)))
+            return status
+        else:
+            return "Resources requested: ?"
+
+
+
+
+    def on_step_begin(self, trials: List[Trial]) -> None:
+        """Before step() is called, update the available resources."""
+        self._update_avail_resources()
+        self._trial_just_finished_before = self._trial_just_finished
+        self._trial_just_finished = False
+
+
     def has_resources(self, resources: Resources) -> bool:
         """Returns whether this runner has at least the specified resources.
 
