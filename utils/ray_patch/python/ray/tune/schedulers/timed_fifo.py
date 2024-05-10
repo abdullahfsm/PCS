@@ -74,6 +74,19 @@ class TimedFIFOScheduler(FIFOScheduler):
 
         return action
 
+
+
+    def choose_trial_to_run(
+            self, trial_runner: "trial_runner.TrialRunner") -> Optional[Trial]:
+        for trial in trial_runner.get_trials():
+            if (trial.status == Trial.PENDING):
+                return trial
+        for trial in trial_runner.get_trials():
+            if (trial.status == Trial.PAUSED):
+                return trial
+        return None
+
+
     def debug_string(self) -> str:
         return "Using TimedFIFO scheduling algorithm."
 
