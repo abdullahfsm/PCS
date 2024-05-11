@@ -423,6 +423,6 @@ if __name__ == '__main__':
 
 
     ray.init(address="auto")
-    future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
-    ray.get(future)
+    # future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
+    # ray.get(future)
     time.sleep(2)
