@@ -428,6 +428,6 @@ if __name__ == '__main__':
     app = App(app_id=0, service=args.budget, demand=args.num_samples, trial_runner_queue=trial_runner_queue, allocation=args.num_samples)
 
 
-    # future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
-    # ray.get(future)
+    future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
+    ray.get(future)
     time.sleep(2)
