@@ -321,7 +321,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
     queue2 = Queue()
     queue3 = Queue()
     
-    schedule_q_put.remote(21, queue1, Resources(cpu=1,gpu=1))
+    schedule_q_put.remote(60, queue1, Resources(cpu=1,gpu=1))
 
     trial_executor = MyRayTrialExecutor(
                         name=f"app_{app.app_id}",
