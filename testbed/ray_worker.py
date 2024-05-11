@@ -415,14 +415,19 @@ if __name__ == '__main__':
     parser.add_argument("--sleep_time", type=float, default=None)
     args = parser.parse_args()
 
+
+
+
+
     os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
+
+    ray.init(address="auto")
 
     trial_runner_queue = {"downlink": Queue(), "uplink": Queue()}
     event_queue = Queue()
     app = App(app_id=0, service=args.budget, demand=args.num_samples, trial_runner_queue=trial_runner_queue, allocation=args.num_samples)
 
 
-    ray.init(address="auto")
     # future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
     # ray.get(future)
     time.sleep(2)
