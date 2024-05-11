@@ -238,15 +238,22 @@ def train_cifar10(config: dict, checkpoint_dir=None):
             epochs=epochs,
             verbose=0,
             validation_data=(x_validation, y_validation),
-            callbacks=[
-                TuneReportCheckpointCallback(
-                    filename=CHECKPOINT_FILENAME,
-                    # checkpointing should happen every iteration
-                    # with dynamic resource allocation
-                    frequency=1)
+            callbacks=[])
+
+    # model.fit(x_train, y_train,
+    #         batch_size=batch_size,
+    #         epochs=epochs,
+    #         verbose=0,
+    #         validation_data=(x_validation, y_validation),
+    #         callbacks=[
+    #             TuneReportCheckpointCallback(
+    #                 filename=CHECKPOINT_FILENAME,
+    #                 # checkpointing should happen every iteration
+    #                 # with dynamic resource allocation
+    #                 frequency=1)
 
 
-            ])
+    #         ])
 
 
 @ray.remote
@@ -314,14 +321,14 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
     queue2 = Queue()
     queue3 = Queue()
     
-    schedule_q_put.remote(30, queue1, Resources(cpu=1,gpu=1))
+    schedule_q_put.remote(21, queue1, Resources(cpu=1,gpu=1))
 
     trial_executor = MyRayTrialExecutor(
                         name=f"app_{app.app_id}",
                         get_queue=queue1,
                         set_queue=queue2,
                         event_queue=queue3,
-                        init_resources = Resources(cpu=4,gpu=4),
+                        init_resources = Resources(cpu=2,gpu=2),
                     )
 
 
