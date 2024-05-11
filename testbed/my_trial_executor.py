@@ -79,6 +79,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._last_ping_time = datetime.datetime.now()
 
         self._has_errored = False
+        self._max_queue_gets = 20
 
 
         super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
@@ -364,24 +365,28 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def _update_avail_resources(self, num_retries=5):
 
         if self._get_queue is not None:
+
+
+
             try:
-                resources = self._get_queue.get(block=False)
+                for _ in range(self._max_queue_gets):
+                    resources = self._get_queue.get(block=False)
 
-                # convert int resources to Resource type
-                if isinstance(resources, int):
+                    # convert int resources to Resource type
+                    if isinstance(resources, int):
 
-                    if resources < 0:
-                        raise ValueError("Force stop")
+                        if resources < 0:
+                            raise ValueError("Force stop")
 
-                    # dont know what will happen if we don't do this
-                    resources = Resources(cpu=resources, gpu=resources)
-                    
+                        # dont know what will happen if we don't do this
+                        resources = Resources(cpu=resources, gpu=resources)
+                        
 
-                if not isinstance(resources, Resources):
-                    raise ValueError(f"resources not of type Resources")
-                print(f"Got resources: {resources}")
+                    if not isinstance(resources, Resources):
+                        raise ValueError(f"resources not of type Resources")
+                    print(f"Got resources: {resources}")
 
-                self._avail_resources = resources
+                    self._avail_resources = resources
 
             except Empty:
                 # do nothing. no need to update

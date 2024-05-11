@@ -250,7 +250,7 @@ def tune_cifar10(app, event_queue, inactivity_time):
                 "p5": tune.choice([0]),
                 "lr": tune.choice([0.1,0.01,0.0001])},
         trial_executor=trial_executor,
-        # verbose=0,
+        verbose=1,
     )
 
 
