@@ -36,6 +36,7 @@ from RayThemisScheduler import RayAppThemisScheduler
 
 from fractions import Fraction as frac
 from my_trial_executor import MyRayTrialExecutor
+from ray.tune.resources import Resources
 
 def model_generator(config):
     
