@@ -60,6 +60,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 set_queue,
                 event_queue,
                 init_resources: Resources = Resources(cpu=0,gpu=0),
+                inactivity_time: float('inf'),
                 queue_trials: bool = False,
                 reuse_actors: bool = False,
                 result_buffer_length: Optional[int] = None,
@@ -74,6 +75,10 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._event_queue = event_queue
 
         self._tune_started = False
+        self._inactivity_time = inactivity_time or float('inf')
+        self._last_ping_time = datetime.datetime.now()
+
+        self._has_errored = False
 
 
         super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
@@ -118,8 +123,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def debug_string(self) -> str:
         """Returns a human readable message for printing to the console."""
 
-        
-
         if self._resources_initialized:
             status = ("Resources used: {}/{} CPUs, {}/{} GPUs, "
                       "{}/{} GiB heap, {}/{} GiB objects, GPU demand: {}/{}".format(
@@ -137,14 +140,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def _update_demand(self, trials: List[Trial]):
         self._demand = Resources(cpu=0,gpu=0)
         
-
-        # PENDING = "PENDING"
-        # RUNNING = "RUNNING"
-        # PAUSED = "PAUSED"
-        # TERMINATED = "TERMINATED"
-        # ERROR = "ERROR"
-
-
         for trial in trials:
             if trial.status not in [Trial.TERMINATED, Trial.ERROR]:
                 self._demand += trial.resources
@@ -172,6 +167,16 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
 
 
+    def _stop_trial_runner(self, trial_runner):
+        """
+        This tries to stop the ongoing trial runner by setting all trial decisions to Stop
+        """
+
+        trials = trial_runner.get_trials()
+        for trial in trials:
+            trial_runner._queue_decision(trial, TrialScheduler.STOP)
+
+
 
     def on_step_begin(self, trial_runner) -> None:
         """Before step() is called, update the available resources."""
@@ -185,14 +190,37 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
 
         self._update_avail_resources()
+
+        if self._has_errored:
+            self._stop_trial_runner(trial_runner)
+            return
+
+        
+
+
         self._update_demand(trials)
 
 
 
-        # TODO: define preempt, unpreempt state, define preempt and unpreempt functions
+        # TODO: use set_queue to set estimated_end_times and add ping event
+        estimated_times = trial_runner._scheduler_alg.estimate_remaining_trial_times()
+        self._set_queue.put(estimated_times)
+
+        # send a ping event quaterly w.r.t. inactivity_time
+        if (datetime.datetime.now() - self._last_ping_time).total_seconds() > (self._inactivity_time/4.0):
+            app_id = self._get_app_id()
+            self._last_ping_time = datetime.datetime.now()
+            self._event_queue.put(Event(event_id=app_id, event_type="APP_PING", event_time=self._last_ping_time, app_id=app_id))
+            
+        
         if self._avail_resources >= self._demand:
             if self._demand > self._committed_resources:
-                # start to unpause/unpreempt d-c trials
+
+                """
+                Unpause/unpreempt d-c trials.
+                Currently not doing anything special - assuming/relying on trial_scheduler
+                to keep choosing paused trials in order
+                """
                 pass
             elif self._demand == self._committed_resources:
                 # do nothing
@@ -201,7 +229,11 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 raise ValueError("Demand is less than committed resources")
         else:
             if self._avail_resources > self._committed_resources:
-                # unpause unpreempt r-c trials
+                """
+                Unpause/unpreempt r-c trials.
+                Currently not doing anything special - assuming/relying on trial_scheduler
+                to keep choosing paused trials in order
+                """
                 pass
             elif self._avail_resources == self._committed_resources:
                 # do nothing
@@ -212,9 +244,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 running_trials = list(filter(lambda t: t.status == Trial.RUNNING, trials))
 
                 get_trial_idx = lambda t: int(t.trial_id.split('_')[-1])
-
                 running_trials = sorted(running_trials, key=get_trial_idx, reverse=True)
-
                 to_preempt = self._committed_resources.gpu - self._avail_resources.gpu
 
                 assert(to_preempt <= len(running_trials))
@@ -294,21 +324,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         
         return False
 
-
-
-    def pause_trial(self, trial: Trial) -> None:
-        """Pauses the trial.
-
-        If trial is in-flight, preserves return value in separate queue
-        before pausing, which is restored when Trial is resumed.
-        """
-        trial_future = self._find_item(self._running, trial)
-        if trial_future:
-            self._paused[trial_future[0]] = trial
-        super(RayTrialExecutor, self).pause_trial(trial)
-
-
-    # have to overload this to pass in an extra parameter
+    # have to overload this to pass in an extra parameter to stop_trail
     def pause_trial(self, trial: Trial) -> None:
         """Pauses the trial.
 
@@ -356,6 +372,16 @@ class MyRayTrialExecutor(RayTrialExecutor):
         if self._get_queue is not None:
             try:
                 resources = self._get_queue.get(block=False)
+
+                # convert int resources to Resource type
+                if isinstance(resources, int):
+
+                    if resources < 0:
+                        raise ValueError("Force stop")
+
+                    resources = Resources(cpu=resources, gpu=resources)
+                
+
                 if not isinstance(resources, Resources):
                     raise ValueError(f"resources not of type Resources")
                 print(f"Got resources: {resources}")
@@ -366,7 +392,8 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 # do nothing. no need to update
                 pass
             except Exception as e:
-                raise e
+                print(f"Error: {e}")
+                self._has_errored = True
 
 
             self._last_resource_refresh = time.time()

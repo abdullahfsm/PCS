@@ -8,7 +8,7 @@ from GenericScheduler import AppGenericScheduler
 
 from datetime import datetime, timedelta
 from time import sleep
-import numpy as np
+import random
 
 class RayAppGenericScheduler(AppGenericScheduler):
     """docstring for RayAppGenericScheduler"""
@@ -60,7 +60,7 @@ class RayAppGenericScheduler(AppGenericScheduler):
             trial_id_to_estimated_remaining_time = {}
             for _ in range(num_gets):
                 trial_id_to_estimated_remaining_time = app.trial_runner_queue["uplink"].get(block=False)
-            
+
             for trial_id in trial_id_to_estimated_remaining_time:
                 
                 job_id = int(trial_id.split("_")[-1])
@@ -216,11 +216,9 @@ class RayAppGenericScheduler(AppGenericScheduler):
                     num_gets = len(self._event_queue)
                     for _ in range(num_gets):
                         e = self._event_queue.get()
-                        print(f"e.type: {e.event_type} e.time: {e.event_time} e.app_id: {e.app_id}")
+                        print(e)
 
                     app.trial_runner_queue["downlink"].put(-1)
-                    ray.cancel(app.future, force=True)
-
                     failure_event = Event(event_id=app.app_id, event_type="APP_FAILURE", event_time=datetime.now(), app_id=app.app_id)
                     self.handle_app_failure_event(failure_event)
 
@@ -228,10 +226,6 @@ class RayAppGenericScheduler(AppGenericScheduler):
 
                     # self.restart_failed_app(app)
 
-
-
-
-                    sys.exit(1)
 
                 elif app.remaining_service < -1.0 * self._extra_service:
                     pass
@@ -280,7 +274,8 @@ class RayAppGenericScheduler(AppGenericScheduler):
         if event.event_type == Event.APP_SUB:
 
 
-            if self._estimate and np.random.uniform() < 1.2:
+            
+            if self._estimate and random.uniform(0,1) < 1.2:
                 self.sim_estimate(app = self._app_list[event.app_id])
 
             self.handle_app_sub_event(event)

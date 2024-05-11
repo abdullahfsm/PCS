@@ -55,11 +55,13 @@ CHECKPOINT_FILENAME="my_model.keras"
 
 class App(object):
     """docstring for App"""
-    def __init__(self, app_id, service, demand):
+    def __init__(self, app_id, service, demand, trial_runner_queue, allocation):
         super(App, self).__init__()
         self.app_id = app_id
         self.service = service
         self.demand = demand
+        self.trial_runner_queue = trial_runner_queue
+        self.allocation = allocation
 
 
 def model_generator(config):
@@ -311,6 +313,45 @@ def example_resources_allocation_function(
 
 
 
+@ray.remote
+def tune_cifar10(app, event_queue, inactivity_time):
+
+    trial_scheduler = TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
+
+
+    get_queue = app.trial_runner_queue.get('downlink')
+    set_queue = app.trial_runner_queue.get('uplink')
+
+
+    # TODO: set correct init resources
+    trial_executor = MyRayTrialExecutor(
+                        name=f"app_{app.app_id}",
+                        get_queue=get_queue,
+                        set_queue=set_queue,
+                        event_queue=event_queue,
+                        init_resources = Resources(cpu=app.allocation,gpu=app.allocation),
+                        inactivity_time=inactivity_time,
+                    )
+
+    analysis = tune.run(
+        train_cifar10,
+        resources_per_trial={'cpu': 1, 'gpu': 1},
+        name=f"app_{app.app_id}",
+        trial_name_creator=lambda T: "app_%d_%s" % (app.app_id, T.trial_id),
+        scheduler=trial_scheduler,
+        num_samples=app.demand,
+        config={"p1": tune.choice([0]),
+                "p2": tune.choice([0]),
+                "p3": tune.choice([0]),
+                "p4": tune.choice([0]),
+                "p5": tune.choice([0]),
+                "lr": tune.choice([0.1,0.01,0.0001])},
+        trial_executor=trial_executor,
+        verbose=2,
+    )
+
+
+'''
 def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0, sleep_time=None):
 
     app = App(0, budget, num_samples)
@@ -362,7 +403,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0, sleep_time=None
         event = queue3.get()
         print(f"Event recieved: {event}")
         
-
+'''
 
 
 if __name__ == '__main__':
@@ -374,10 +415,14 @@ if __name__ == '__main__':
     parser.add_argument("--sleep_time", type=float, default=None)
     args = parser.parse_args()
 
-
     os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
 
-    ray.init(address="auto")
-    tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget, sleep_time=args.sleep_time)
+    trial_runner_queue = {"downlink": Queue(), "uplink": Queue()}
+    event_queue = Queue()
+    app = App(app_id=0, service=args.budget, demand=args.num_samples, trial_runner_queue=trial_runner_queue, allocation=args.num_samples)
 
+
+    ray.init(address="auto")
+    future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
+    ray.get(future)
     time.sleep(2)

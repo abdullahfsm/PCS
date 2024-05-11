@@ -35,7 +35,7 @@ from RayAFSScheduler import RayAppAFSScheduler
 from RayThemisScheduler import RayAppThemisScheduler
 
 from fractions import Fraction as frac
-
+from my_trial_executor import MyRayTrialExecutor
 
 def model_generator(config):
     
@@ -198,10 +198,11 @@ def train_cifar10(config, checkpoint_dir=None):
 
     model = model_generator(config)
 
+    if checkpoint_dir:
+        model = tf.keras.models.load_model(os.path.join(checkpoint_dir, "model.keras"))
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=config.get('lr', 0.001))
     loss = tf.keras.losses.CategoricalCrossentropy()
-
 
     model.compile(loss=loss,
                 optimizer=optimizer,
@@ -212,20 +213,32 @@ def train_cifar10(config, checkpoint_dir=None):
             epochs=epochs,
             verbose=0,
             validation_data=(x_validation, y_validation),
-            callbacks=[TuneReportCallback({
-                "mean_accuracy": "accuracy"
-            })])
-
+            callbacks=[TuneReportCallback({"mean_accuracy": "accuracy"})])
 
 @ray.remote
 def tune_cifar10(app, event_queue, inactivity_time):
 
-    trial_scheduler=TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
+    trial_scheduler = TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
+
+
+    get_queue = app.trial_runner_queue.get('downlink')
+    set_queue = app.trial_runner_queue.get('uplink')
+
+
+    # TODO: set os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
+    trial_executor = MyRayTrialExecutor(
+                        name=f"app_{app.app_id}",
+                        get_queue=get_queue,
+                        set_queue=set_queue,
+                        event_queue=event_queue,
+                        init_resources = Resources(cpu=app.allocation,gpu=app.allocation),
+                        inactivity_time=inactivity_time,
+                    )
 
     analysis = tune.run(
         train_cifar10,
-        resources_per_trial={"gpu": 1},
-        name="app_%d" % app.app_id,
+        resources_per_trial={'cpu': 1, 'gpu': 1},
+        name=f"app_{app.app_id}",
         trial_name_creator=lambda T: "app_%d_%s" % (app.app_id, T.trial_id),
         scheduler=trial_scheduler,
         num_samples=app.demand,
@@ -233,12 +246,11 @@ def tune_cifar10(app, event_queue, inactivity_time):
                 "p2": tune.choice([0]),
                 "p3": tune.choice([0]),
                 "p4": tune.choice([0]),
-                "p5": tune.choice([0])},
-        event_queue=event_queue,
-        event_creator=Event,
-        # callbacks=[JobEvent(app, queue)],
-        scheduler_trial_runner_queue=app.trial_runner_queue,
-        inactivity_time=inactivity_time)
+                "p5": tune.choice([0]),
+                "lr": tune.choice([0.1,0.01,0.0001])},
+        trial_executor=trial_executor,
+        verbose=2,
+    )
 
 
 @ray.remote
