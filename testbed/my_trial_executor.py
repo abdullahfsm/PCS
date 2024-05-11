@@ -84,7 +84,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                         self._committed_resources.gpu,self._avail_resources.gpu,
                         _to_gb(self._committed_resources.memory),_to_gb(self._avail_resources.memory),
                         _to_gb(self._committed_resources.object_store_memory),_to_gb(self._avail_resources.object_store_memory),
-                        self._demand.gpu, self._avail_resources.gpu,)
+                        self._demand.gpu, self._avail_resources.gpu)
                       )
             return status
         else:
