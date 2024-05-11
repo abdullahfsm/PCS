@@ -137,8 +137,17 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def _update_demand(self, trials: List[Trial]):
         self._demand = Resources(cpu=0,gpu=0)
         
+
+        # PENDING = "PENDING"
+        # RUNNING = "RUNNING"
+        # PAUSED = "PAUSED"
+        # TERMINATED = "TERMINATED"
+        # ERROR = "ERROR"
+
+
         for trial in trials:
-            self._demand += trial.resources
+            if trial.status not in [Trial.TERMINATED, Trial.ERROR]:
+                self._demand += trial.resources
             
         
 
@@ -286,19 +295,57 @@ class MyRayTrialExecutor(RayTrialExecutor):
         return False
 
 
+
+    def pause_trial(self, trial: Trial) -> None:
+        """Pauses the trial.
+
+        If trial is in-flight, preserves return value in separate queue
+        before pausing, which is restored when Trial is resumed.
+        """
+        trial_future = self._find_item(self._running, trial)
+        if trial_future:
+            self._paused[trial_future[0]] = trial
+        super(RayTrialExecutor, self).pause_trial(trial)
+
+
+    # have to overload this to pass in an extra parameter
+    def pause_trial(self, trial: Trial) -> None:
+        """Pauses the trial.
+
+        If trial is in-flight, preserves return value in separate queue
+        before pausing, which is restored when Trial is resumed.
+        
+        We want to release resources (specifically GPUs) when pausing an
+        experiment. This results in PAUSED state that similar to TERMINATED.
+        """
+        
+        trial_future = self._find_item(self._running, trial)
+        if trial_future:
+            self._paused[trial_future[0]] = trial
+    
+        assert trial.status == Trial.RUNNING, trial.status
+        try:
+            self.save(trial, Checkpoint.MEMORY)
+            self.stop_trial(trial, pause_only=True)
+            self.set_status(trial, Trial.PAUSED)
+        except Exception:
+            logger.exception("Error pausing runner.")
+            self.set_status(trial, Trial.ERROR)
+
+
     def stop_trial(self,
                    trial: Trial,
                    error: bool = False,
                    error_msg: Optional[str] = None,
+                   pause_only: bool = False,
                    destroy_pg_if_cannot_replace: bool = True) -> None:
 
         super(MyRayTrialExecutor, self).stop_trial(trial, error, error_msg, destroy_pg_if_cannot_replace)
         self._return_resources(trial.resources)
 
-
         print(f"Stopping trail_id: {trial.trial_id} status: {trial.status}")
 
-        if not self._find_item(self._paused, trial):
+        if not pause_only:
             # stop_trial was not called by pause_trial
             self._notify_trial_end(trial)
 
