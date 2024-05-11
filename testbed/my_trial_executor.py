@@ -135,7 +135,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
             else:
                 # only point where preemption happens
                 # preempt c-r trials
-                running_trials = list(filter(lambda t: t.status == Trial.RUNNING))
+                running_trials = list(filter(lambda t: t.status == Trial.RUNNING, trials))
 
                 get_trial_idx = lambda t: int(t.trial_id.split('_')[-1])
 
