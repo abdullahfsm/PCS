@@ -213,7 +213,7 @@ def train_cifar10(config, checkpoint_dir=None):
             epochs=epochs,
             verbose=0,
             validation_data=(x_validation, y_validation),
-            callbacks=[TuneReportCallback({"mean_accuracy": "accuracy"})])
+            callbacks=[TuneReportCallback({"accuracy": "accuracy"})])
 
 @ray.remote
 def tune_cifar10(app, event_queue, inactivity_time):
@@ -249,7 +249,7 @@ def tune_cifar10(app, event_queue, inactivity_time):
                 "p5": tune.choice([0]),
                 "lr": tune.choice([0.1,0.01,0.0001])},
         trial_executor=trial_executor,
-        verbose=2,
+        # verbose=0,
     )
 
 
