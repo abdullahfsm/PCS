@@ -373,8 +373,13 @@ class MyRayTrialExecutor(RayTrialExecutor):
                     if resources < 0:
                         raise ValueError("Force stop")
 
+                    # dont know what will happen if we don't do this
+                    resources = min(resources, ray.available_resources()['GPU'])
                     resources = Resources(cpu=resources, gpu=resources)
-                
+                    
+
+
+
 
                 if not isinstance(resources, Resources):
                     raise ValueError(f"resources not of type Resources")
