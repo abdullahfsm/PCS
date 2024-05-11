@@ -78,30 +78,33 @@ class MyRayTrialExecutor(RayTrialExecutor):
         
 
         if self._resources_initialized:
-            status = ("Resources requested: {}/{} CPUs, {}/{} GPUs, "
-                      "{}/{} GiB heap, {}/{} GiB objects, GPU demand: {}".format(
+            status = ("Resources used: {}/{} CPUs, {}/{} GPUs, "
+                      "{}/{} GiB heap, {}/{} GiB objects, GPU demand: {}/{}: {}".format(
                         self._committed_resources.cpu, self._avail_resources.cpu,
                         self._committed_resources.gpu,self._avail_resources.gpu,
                         _to_gb(self._committed_resources.memory),_to_gb(self._avail_resources.memory),
                         _to_gb(self._committed_resources.object_store_memory),_to_gb(self._avail_resources.object_store_memory),
-                        self._demand,)
+                        self._demand.gpu, self._avail_resources.gpu,)
                       )
             return status
         else:
             return "Resources requested: ?"
 
 
-    def _update_demand(self):
+    def _update_demand(self, trials: List[Trial]):
         self._demand = Resources(cpu=0,gpu=0)
         
-        for lst in self._running.values() + self._pending.values() + self._preempted.values() + self._paused.values():
-            self._demand = Resources.add(self._demand, t.resources)
+        for trial in trials:
+            self._demand = Resources.add(self._demand, trial.resources)
+        
+        # for lst in self._running.values() + self._pending.values() + self._preempted.values() + self._paused.values():
+            
         
 
     def on_step_begin(self, trials: List[Trial]) -> None:
         """Before step() is called, update the available resources."""
         self._update_avail_resources()
-        self._update_demand()
+        self._update_demand(trials)
 
         # TODO: define preempt, unpreempt state, define preempt and unpreempt functions
         if self._avail_resources >= self._demand:
