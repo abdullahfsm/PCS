@@ -346,7 +346,7 @@ def tune_cifar10(app, event_queue, inactivity_time):
                 "p5": tune.choice([0]),
                 "lr": tune.choice([0.1,0.01,0.0001])},
         trial_executor=trial_executor,
-        verbose=2,
+        # verbose=2,
     )
 
 
@@ -414,9 +414,6 @@ if __name__ == '__main__':
     parser.add_argument("--allocation", type=int, default=1)
     parser.add_argument("--sleep_time", type=float, default=None)
     args = parser.parse_args()
-
-
-
 
 
     # os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
