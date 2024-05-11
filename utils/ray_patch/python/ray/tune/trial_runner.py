@@ -401,6 +401,8 @@ class TrialRunner:
             if str(e) != "'list' object has no attribute 'get_trials'":
                 raise
             else:
+
+                '''
                 logger.warning(
                     "TrialExecutor is migrating off of TrialRunner "
                     "interface. Expect List[Trial] to be passed in directly. "
@@ -411,6 +413,7 @@ class TrialRunner:
                     "caller side, but as there is no atomicity nor "
                     "idempotency guaranteed by TrialExecutor API contract, "
                     "weird behaviors may happen.")
+                '''
                 func(self)
 
     def _validate_resume(self, resume_type):
