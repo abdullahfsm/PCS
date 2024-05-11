@@ -35,6 +35,9 @@ from ray.tune.utils import warn_if_slow
 from ray.util import log_once
 from ray.util.annotations import DeveloperAPI
 
+
+from ray.tune.schedulers import TrialScheduler
+
 from ray.tune.ray_trial_executor import *
 from ray.util.queue import Queue, Empty
 from ray.tune.ray_trial_executor import (
@@ -101,10 +104,16 @@ class MyRayTrialExecutor(RayTrialExecutor):
             
         
 
-    def on_step_begin(self, trials: List[Trial]) -> None:
+    def on_step_begin(self, trial_runner) -> None:
         """Before step() is called, update the available resources."""
+
+        trials = trial_runner.get_trials()
+
+
         self._update_avail_resources()
         self._update_demand(trials)
+
+
 
         # TODO: define preempt, unpreempt state, define preempt and unpreempt functions
         if self._avail_resources >= self._demand:
@@ -124,11 +133,21 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 # do nothing
                 pass
             else:
-                # preempt c-r trials
                 # only point where preemption happens
-                pass
+                # preempt c-r trials
+                running_trials = list(filter(lambda t: t.status == Trial.RUNNING))
 
+                get_trial_idx = lambda t: int(t.trial_id.split('_')[-1])
 
+                running_trials = sorted(running_trials, key=get_trial_idx, reverse=True)
+
+                to_preempt = self._committed_resources.gpu - self._avail_resources.gpu
+
+                assert(to_preempt <= len(running_trials))
+
+                for r in range(to_preempt):
+                    trial_runner._queue_decision(running_trials[r], TrialScheduler.PAUSE)
+            
         self._trial_just_finished_before = self._trial_just_finished
         self._trial_just_finished = False
 
