@@ -411,6 +411,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_samples", type=int, default=14)
     parser.add_argument("--reduction_factor", type=int, default=2)
     parser.add_argument("--budget", type=float, default=5.0)
+    parser.add_argument("--allocation", type=int, default=1)
     parser.add_argument("--sleep_time", type=float, default=None)
     args = parser.parse_args()
 
@@ -422,9 +423,14 @@ if __name__ == '__main__':
 
     ray.init(address="auto")
 
+    assert(args.allocation <= ray.available_resources()['GPU'])
+
     trial_runner_queue = {"downlink": Queue(), "uplink": Queue()}
     event_queue = Queue()
-    app = App(app_id=0, service=args.budget, demand=args.num_samples, trial_runner_queue=trial_runner_queue, allocation=args.num_samples)
+    app = App(app_id=0, service=args.budget, demand=args.num_samples, trial_runner_queue=trial_runner_queue, allocation=args.allocation)
+
+    if args.sleep_time:
+        schedule_q_put.remote(args.sleep_time, trial_runner_queue.get('downlink'), Resources(cpu=1,gpu=1))
 
 
     future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
