@@ -311,7 +311,7 @@ def example_resources_allocation_function(
 
 
 
-def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
+def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0, sleep_time=None):
 
     app = App(0, budget, num_samples)
 
@@ -321,7 +321,8 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
     queue2 = Queue()
     queue3 = Queue()
     
-    schedule_q_put.remote(60, queue1, Resources(cpu=1,gpu=1))
+    if sleep_time:
+        schedule_q_put.remote(sleep_time, queue1, Resources(cpu=1,gpu=1))
 
     trial_executor = MyRayTrialExecutor(
                         name=f"app_{app.app_id}",
@@ -370,12 +371,13 @@ if __name__ == '__main__':
     parser.add_argument("--num_samples", type=int, default=14)
     parser.add_argument("--reduction_factor", type=int, default=2)
     parser.add_argument("--budget", type=float, default=5.0)
+    parser.add_argument("--sleep_time", type=float, default=None)
     args = parser.parse_args()
 
 
     os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
 
     ray.init(address="auto")
-    tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget)
+    tune_cifar10(num_samples=args.num_samples, reduction_factor=args.reduction_factor, budget=args.budget, sleep_time=args.sleep_time)
 
     time.sleep(2)
