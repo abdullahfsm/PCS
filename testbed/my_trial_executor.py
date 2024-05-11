@@ -295,6 +295,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
         super(MyRayTrialExecutor, self).stop_trial(trial, error, error_msg, destroy_pg_if_cannot_replace)
         self._return_resources(trial.resources)
 
+
+        print(f"Stopping trail_id: {trial.trial_id} status: {trial.status}")
+
         if not self._find_item(self._paused, trial):
             # stop_trial was not called by pause_trial
             self._notify_trial_end(trial)

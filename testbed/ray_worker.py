@@ -340,13 +340,14 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
         trial_name_creator=lambda T: "app_%d_%s" % (app.app_id, T.trial_id),
         scheduler=trial_scheduler,
         num_samples=num_samples,
-        config={"p1": tune.choice([0,1]),
-                "p2": tune.choice([0,1]),
-                "p3": tune.choice([0,1]),
-                "p4": tune.choice([0,1]),
-                "p5": tune.choice([0,1])},
+        config={"p1": tune.choice([0]),
+                "p2": tune.choice([0]),
+                "p3": tune.choice([0]),
+                "p4": tune.choice([0]),
+                "p5": tune.choice([0])},
         
         trial_executor=trial_executor,
+        verbose=1,
     )
         
 
