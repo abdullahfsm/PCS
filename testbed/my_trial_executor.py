@@ -60,7 +60,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 set_queue,
                 event_queue,
                 init_resources: Resources = Resources(cpu=0,gpu=0),
-                inactivity_time: float('inf'),
+                inactivity_time: float = float('inf'),
                 queue_trials: bool = False,
                 reuse_actors: bool = False,
                 result_buffer_length: Optional[int] = None,
