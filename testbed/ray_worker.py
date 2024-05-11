@@ -310,17 +310,20 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
 
     trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
 
-    # trial_scheduler = ResourceChangingScheduler(
-    #     base_scheduler=trial_scheduler,
-    #     resources_allocation_function=example_resources_allocation_function
-    #     )
-
-
-    queue = Queue()
+    queue1 = Queue()
+    queue2 = Queue()
+    queue3 = Queue()
     
-    schedule_q_put.remote(30, queue, Resources(cpu=1,gpu=1))
+    schedule_q_put.remote(30, queue1, Resources(cpu=1,gpu=1))
 
-    trial_executor = MyRayTrialExecutor(get_queue=queue, set_queue=Queue, init_resources=Resources(cpu=4,gpu=4))
+    trial_executor = MyRayTrialExecutor(
+                        name=f"app_{app.app_id}",
+                        get_queue=queue1,
+                        set_queue=queue2,
+                        event_queue=queue3,
+                        init_resources = Resources(cpu=4,gpu=4),
+                    )
+
 
     analysis = tune.run(
         train_cifar10,
@@ -344,8 +347,13 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0):
     print("Best config: ", analysis.get_best_config(
         metric="accuracy", mode="max"))
 
-    # Get a dataframe for analyzing trial results.
-    # df = analysis.results_df
+
+    print("===================")
+    while not queue3.empty():
+        event = queue3.get()
+        print(f"Event recieved: {event}")
+        
+
 
 
 if __name__ == '__main__':

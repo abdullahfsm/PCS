@@ -48,31 +48,71 @@ from ray.tune.ray_trial_executor import (
     _to_gb
 )
 
+from common import Event
+import datetime
 
 class MyRayTrialExecutor(RayTrialExecutor):
     """An implementation of MyRayTrialExecutor based on RayTrialExecutor."""
 
     def __init__(self,
+                name,
                 get_queue,
                 set_queue,
+                event_queue,
+                init_resources: Resources = Resources(cpu=0,gpu=0),
                 queue_trials: bool = False,
                 reuse_actors: bool = False,
                 result_buffer_length: Optional[int] = None,
                 refresh_period: Optional[float] = None,
                 wait_for_placement_group: Optional[float] = None,
-                init_resources: Resources = Resources(cpu=0,gpu=0)):
+                ):
         
         
-        self._set_queue = set_queue
+        self._name = name
         self._get_queue = get_queue
+        self._set_queue = set_queue
+        self._event_queue = event_queue
+
+        self._tune_started = False
+
+
         super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
 
         self._avail_resources = init_resources
 
-        self._preempted = {}
-        self._pending = {}
-
         self._demand = Resources(cpu=0,gpu=0)
+
+
+    def _get_app_id(self):
+        try:
+            return int(self._name.split("app_")[-1])
+        except Exception as e:
+            raise e
+
+
+    def _get_job_id(self, trial):
+        try:
+            return int(trial.trial_id.split("_")[-1])
+        except Exception as e:
+            raise e
+
+    def _notify_tune_finished(self):
+        app_id = self._get_app_id()
+        self._event_queue.put(Event(event_id=app_id, event_type=Event.APP_END, event_time=datetime.datetime.now(), app_id=app_id))
+
+    def _notify_tune_start(self):
+        app_id = self._get_app_id()
+        self._event_queue.put(Event(event_id=app_id, event_type=Event.APP_START, event_time=datetime.datetime.now(), app_id=app_id))
+
+    def _notify_trial_start(self, trial):
+        app_id = self._get_app_id()
+        job_id = self._get_job_id(trial)
+        self._event_queue.put(Event(event_id=app_id, event_type=Event.JOB_START, event_time=datetime.datetime.now(), app_id=app_id, job_id=job_id))
+
+    def _notify_trial_end(self, trial):
+        app_id = self._get_app_id()
+        job_id = self._get_job_id(trial)
+        self._event_queue.put(Event(event_id=app_id, event_type=Event.JOB_END, event_time=datetime.datetime.now(), app_id=app_id, job_id=job_id))
 
 
     def debug_string(self) -> str:
@@ -99,15 +139,40 @@ class MyRayTrialExecutor(RayTrialExecutor):
         
         for trial in trials:
             self._demand += trial.resources
-        
-        # for lst in self._running.values() + self._pending.values() + self._preempted.values() + self._paused.values():
             
         
+
+    def on_step_end(self, trial_runner) -> None:
+        
+
+        trials = trial_runner.get_trials()
+
+        if trial_runner.is_finished():
+            self._notify_tune_finished()
+
+        self._just_staged_trials.clear()
+
+        if time.time() > self.last_pg_recon + self.pg_recon_interval:
+            # Only do this every now and then - usually the placement groups
+            # should not get out of sync, and calling this often is inefficient
+            self._pg_manager.reconcile_placement_groups(trials)
+            self.last_pg_recon = time.time()
+
+        self._pg_manager.cleanup()
+
+
+
+
 
     def on_step_begin(self, trial_runner) -> None:
         """Before step() is called, update the available resources."""
 
         trials = trial_runner.get_trials()
+
+        if not self._tune_started:
+            self._notify_tune_start()
+            self._tune_started = True
+
 
 
         self._update_avail_resources()
@@ -145,8 +210,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
                 assert(to_preempt <= len(running_trials))
 
-                for r in range(to_preempt):
-                    trial_runner._queue_decision(running_trials[r], TrialScheduler.PAUSE)
+                # preempt the last r-c trials
+                for t in range(to_preempt):
+                    trial_runner._queue_decision(running_trials[t], TrialScheduler.PAUSE)
             
         self._trial_just_finished_before = self._trial_just_finished
         self._trial_just_finished = False
@@ -193,6 +259,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         return self.has_resources(trial.resources)
 
 
+
     def start_trial(self,
                     trial: Trial,
                     checkpoint: Optional[Checkpoint] = None,
@@ -203,17 +270,19 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         if has_resources:
 
+            prior_status = trial.status
+
             start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
 
             if start_val:
-                print(f"committing resource to trial: {trial.trial_id}")
+                # print(f"committing resource to trial: {trial.trial_id}")
                 self._commit_resources(trial.resources)
                 
-                if trial.trial_id in self._pending:
-                    self._pending.pop(trial.trial_id)
+                if prior_status == Trial.PENDING:
+                    self._notify_trial_start(trial)
 
             return start_val
-        self._pending[trial.trial_id] = trial
+        
         return False
 
 
@@ -225,6 +294,12 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         super(MyRayTrialExecutor, self).stop_trial(trial, error, error_msg, destroy_pg_if_cannot_replace)
         self._return_resources(trial.resources)
+
+        if not self._find_item(self._paused, trial):
+            # stop_trial was not called by pause_trial
+            self._notify_trial_end(trial)
+
+
 
     def _update_avail_resources(self, num_retries=5):
 
