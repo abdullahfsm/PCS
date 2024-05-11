@@ -15,7 +15,7 @@ import argparse
 from functools import partial
 
 
-from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TimedFIFO
+from ray.tune.schedulers.timed_fifo import TimedFIFOScheduler as TrialScheduler
 from ray.tune.utils.placement_groups import PlacementGroupFactory
 
 
@@ -356,7 +356,7 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0, sleep_time=None
 
     app = App(0, budget, num_samples)
 
-    trial_scheduler=TimedFIFO(time_attr='time_total_s',budget=(app.service/app.demand))
+    trial_scheduler=TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
 
     queue1 = Queue()
     queue2 = Queue()
