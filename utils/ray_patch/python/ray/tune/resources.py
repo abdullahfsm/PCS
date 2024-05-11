@@ -173,7 +173,7 @@ class Resources(
                          new_custom_res, extra_custom_res)
 
 
-    def __add__(self, other)
+    def __add__(self, other):
         cpu = self.cpu + other.cpu
         gpu = self.gpu + other.gpu
         memory = self.memory + other.memory
@@ -201,15 +201,15 @@ class Resources(
                          new_custom_res, extra_custom_res)
 
 
-    def __lt__(self, other)
+    def __lt__(self, other):
         return self.gpu < other.gpu 
-    def __le__(self, other)
+    def __le__(self, other):
         return self.gpu <= other.gpu 
-    def __gt__(self, other)
+    def __gt__(self, other):
         return self.gpu > other.gpu 
-    def __ge__(self, other)
+    def __ge__(self, other):
         return self.gpu >= other.gpu 
-    def __eq__(self, other)
+    def __eq__(self, other):
         return self.gpu == other.gpu 
 
     def to_json(self):

@@ -95,7 +95,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._demand = Resources(cpu=0,gpu=0)
         
         for trial in trials:
-            self._demand = Resources.add(self._demand, trial.resources)
+            self._demand += trial.resources
         
         # for lst in self._running.values() + self._pending.values() + self._preempted.values() + self._paused.values():
             
