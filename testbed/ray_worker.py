@@ -237,7 +237,8 @@ def train_cifar10(config: dict, checkpoint_dir=None):
             batch_size=batch_size,
             epochs=epochs,
             verbose=0,
-            validation_data=(x_validation, y_validation),)
+            validation_data=(x_validation, y_validation),
+            callbacks=[TuneReportCallback({"accuracy": "accuracy"})])
 
     # model.fit(x_train, y_train,
     #         batch_size=batch_size,
