@@ -297,6 +297,9 @@ class Event(object):
 
 
 
+    def __repr__(self):
+        return f"Event: id: {self.event_id}, time: {self.event_time}, event_type: {self.event_type}"
+
     
     def __criteria(self):
         return self.event_time
