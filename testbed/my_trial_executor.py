@@ -195,14 +195,8 @@ class MyRayTrialExecutor(RayTrialExecutor):
             self._stop_trial_runner(trial_runner)
             return
 
-        
-
-
         self._update_demand(trials)
 
-
-
-        # TODO: use set_queue to set estimated_end_times and add ping event
         estimated_times = trial_runner._scheduler_alg.estimate_remaining_trial_times()
         self._set_queue.put(estimated_times)
 

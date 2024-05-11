@@ -323,7 +323,6 @@ def tune_cifar10(app, event_queue, inactivity_time):
     set_queue = app.trial_runner_queue.get('uplink')
 
 
-    # TODO: set correct init resources
     trial_executor = MyRayTrialExecutor(
                         name=f"app_{app.app_id}",
                         get_queue=get_queue,
@@ -419,7 +418,7 @@ if __name__ == '__main__':
 
 
 
-    os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
+    # os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
 
     ray.init(address="auto")
 
