@@ -668,7 +668,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 f"a string, make sure the trainable was registered before.")
 
 
-        print(f"DEBUG: trail {trial.trial_id} got trainable_cls: {trainable_cls}")
+        # print(f"DEBUG: trail {trial.trial_id} got trainable_cls: {trainable_cls}")
         _actor_cls = _class_cache.get(trainable_cls)
 
 
@@ -701,7 +701,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
             kwargs["sync_function_tpl"] = trial.sync_to_cloud
 
 
-        print(f"DEBUG: trial: {trial.trial_id} got actor: {full_actor_class}")
+        # print(f"DEBUG: trial: {trial.trial_id} got actor: {full_actor_class}")
 
         with self._change_working_directory(trial):
             return full_actor_class.remote(**kwargs)
@@ -743,12 +743,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
         super(MyRayTrialExecutor, self).stop_trial(trial, error, error_msg, destroy_pg_if_cannot_replace)
         self._return_resources(trial.resources)
-
-        if pause_only:
-            print(f"Pausing trail_id: {self._get_app_id()}_{trial.trial_id} status: {trial.status}")
-        else:
-            print(f"Stopping trail_id: {self._get_app_id()}_{trial.trial_id} status: {trial.status}")
-
 
         if not pause_only:
             # stop_trial was not called by pause_trial
@@ -824,7 +818,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
                     if not isinstance(resources, Resources):
                         raise ValueError(f"resources not of type Resources")
-                    print(f"Got resources: {resources}")
+                    # print(f"Got resources: {resources}")
 
                     self._avail_resources = resources
 
