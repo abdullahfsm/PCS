@@ -314,7 +314,7 @@ def example_resources_allocation_function(
 
 
 @ray.remote
-def tune_cifar10(app, event_queue, inactivity_time):
+def tune_cifar10(app, event_queue, inactivity_time, verbose=3):
 
     trial_scheduler = TrialScheduler(time_attr='time_total_s',budget=(app.service/app.demand))
 
@@ -347,7 +347,7 @@ def tune_cifar10(app, event_queue, inactivity_time):
                 "p5": tune.choice([0]),
                 "lr": tune.choice([0.1,0.01,0.0001])},
         trial_executor=trial_executor,
-        # verbose=0,
+        verbose=verbose,
     )
 
 
@@ -406,6 +406,56 @@ def tune_cifar10(num_samples=2, reduction_factor=2, budget=10.0, sleep_time=None
 '''
 
 
+def multi_app_test(args):
+    
+    ray.init(address="auto")
+
+    assert(args.allocation <= ray.available_resources()['GPU'])
+
+    event_queue = Queue()
+
+    app0 = App(app_id=0, service=120, demand=4, trial_runner_queue={"downlink": Queue(), "uplink": Queue()}, allocation=4)
+    app1 = App(app_id=1, service=120, demand=4, trial_runner_queue={"downlink": Queue(), "uplink": Queue()}, allocation=4)
+
+    
+    app0.trial_runner_queue['downlink'].put(4)
+    future0 = tune_cifar10.remote(app0, event_queue, inactivity_time=None, verbose=1)
+    app0.trial_runner_queue['downlink'].put(0)
+
+    app1.trial_runner_queue['downlink'].put(4)
+    future1 = tune_cifar10.remote(app1, event_queue, inactivity_time=None, verbose=1)
+    ray.get([future1])
+    app0.trial_runner_queue['downlink'].put(4)
+    ray.get([future0])
+
+    time.sleep(2)
+
+
+
+
+def single_app_test(args):
+    ray.init(address="auto")
+
+    assert(args.allocation <= ray.available_resources()['GPU'])
+
+    event_queue = Queue()
+
+    app0 = App(app_id=0, service=120, demand=4, trial_runner_queue={"downlink": Queue(), "uplink": Queue()}, allocation=4)
+    # app1 = App(app_id=1, service=120, demand=4, trial_runner_queue={"downlink": Queue(), "uplink": Queue()}, allocation=4)
+
+    
+    app0.trial_runner_queue['downlink'].put(4)
+    future0 = tune_cifar10.remote(app0, event_queue, inactivity_time=None, verbose=0)
+    # app0.trial_runner_queue['downlink'].put(0)
+
+    # app1.trial_runner_queue['downlink'].put(4)
+    # future1 = tune_cifar10.remote(app1, event_queue, inactivity_time=None, verbose=0)
+
+    ray.get([future0])
+    time.sleep(2)
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -416,21 +466,8 @@ if __name__ == '__main__':
     parser.add_argument("--sleep_time", type=float, default=None)
     args = parser.parse_args()
 
+    # single_app_test(args)
+    multi_app_test(args)
 
     # os.environ["TUNE_CLUSTER_SSH_KEY"] = f"{os.path.expanduser('~')}/.ssh/key"
 
-    ray.init(address="auto")
-
-    assert(args.allocation <= ray.available_resources()['GPU'])
-
-    trial_runner_queue = {"downlink": Queue(), "uplink": Queue()}
-    event_queue = Queue()
-    app = App(app_id=0, service=args.budget, demand=args.num_samples, trial_runner_queue=trial_runner_queue, allocation=args.allocation)
-
-    if args.sleep_time:
-        schedule_q_put.remote(args.sleep_time, trial_runner_queue.get('downlink'), Resources(cpu=1,gpu=1))
-
-
-    future = tune_cifar10.remote(app, event_queue, inactivity_time=None)
-    ray.get(future)
-    time.sleep(2)

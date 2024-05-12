@@ -37,19 +37,33 @@ from ray.util.annotations import DeveloperAPI
 
 
 from ray.tune.schedulers import TrialScheduler
-
-from ray.tune.ray_trial_executor import *
+from ray.tune.trial_executor import TrialExecutor
 from ray.util.queue import Queue, Empty
+
 from ray.tune.ray_trial_executor import (
+    RayTrialExecutor,
     _ActorClassCache,
     _class_cache,
     _LocalWrapper,
     _TrialCleanup,
-    _to_gb
+    noop_logger_creator,
+    _to_gb,
+    TUNE_STATE_REFRESH_PERIOD,
+    BOTTLENECK_WARN_PERIOD_S,
+    NONTRIVIAL_WAIT_TIME_THRESHOLD_S,
+    DEFAULT_GET_TIMEOUT,
+    TRIAL_CLEANUP_THRESHOLD
 )
+
 
 from common import Event
 import datetime
+
+logger = logging.getLogger(__name__)
+
+
+
+
 
 class MyRayTrialExecutor(RayTrialExecutor):
     """An implementation of MyRayTrialExecutor based on RayTrialExecutor."""
@@ -81,12 +95,245 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._has_errored = False
         self._max_queue_gets = 20
 
-
-        super(MyRayTrialExecutor, self).__init__(queue_trials, reuse_actors, result_buffer_length, refresh_period, wait_for_placement_group)
-
         self._avail_resources = init_resources
 
+
+        self._max_pending_trials = 10000
+
+
+        '''
+        Everything below it is mostly ray_trial_executor
+        '''
+        
+        TrialExecutor.__init__(self, queue_trials)
+
+        # Check for if we are launching a trial without resources in kick off
+        # autoscaler.
+        self._trial_queued = False
+        self._running = {}
+        # Since trial resume after paused should not run
+        # trial.train.remote(), thus no more new remote object ref generated.
+        # We use self._paused to store paused trials here.
+        self._paused = {}
+
+        force_trial_cleanup = int(
+            os.environ.get("TUNE_FORCE_TRIAL_CLEANUP_S", "0"))
+        self._trial_cleanup = _TrialCleanup(force_cleanup=force_trial_cleanup)
+        
+        self._reuse_actors = reuse_actors
+
+        self._avail_resources = Resources(cpu=0, gpu=0)
+        self._committed_resources = Resources(cpu=0, gpu=0)
+
+        self._staged_trials = set()
+        self._just_staged_trials = set()
+        self._trial_just_finished = False
+        self._trial_just_finished_before = False
+
+        self._resources_initialized = False
+
+        if refresh_period is None:
+            refresh_period = float(
+                os.environ.get("TUNE_STATE_REFRESH_PERIOD",
+                               TUNE_STATE_REFRESH_PERIOD))
+        self._refresh_period = refresh_period
+
+        self._default_buffer_length = result_buffer_length or int(
+            os.getenv("TUNE_RESULT_BUFFER_LENGTH", 1000))
+        self._buffer_length = result_buffer_length
+
+        self._buffer_min_time_s = float(
+            os.getenv("TUNE_RESULT_BUFFER_MIN_TIME_S", 0.))
+        self._buffer_max_time_s = float(
+            os.getenv("TUNE_RESULT_BUFFER_MAX_TIME_S", 100.))
+
+        self._last_resource_refresh = float("-inf")
+        self._last_ip_refresh = float("-inf")
+        self._last_ip_addresses = set()
+        self._last_nontrivial_wait = time.time()
+
+        if ray.is_initialized():
+            self._update_avail_resources()
+
         self._demand = Resources(cpu=0,gpu=0)
+
+        self._steps = 0
+
+
+
+    def set_max_pending_trials(self, max_pending: int) -> None:
+        self._max_pending_trials = max(max_pending, self._max_pending_trials)
+
+
+
+    def export_trial_if_needed(self, trial: Trial) -> Dict:
+        """Exports model of this trial based on trial.export_formats.
+
+        Return:
+            A dict that maps ExportFormats to successfully exported models.
+        """
+        if trial.export_formats and len(trial.export_formats) > 0:
+            with self._change_working_directory(trial):
+                return ray.get(
+                    trial.runner.export_model.remote(trial.export_formats),
+                    timeout=DEFAULT_GET_TIMEOUT)
+        return {}
+
+
+    @contextmanager
+    def _change_working_directory(self, trial):
+        """Context manager changing working directory to trial logdir.
+        Used in local mode.
+
+        For non-local mode it is no-op.
+        """
+        if ray.worker._mode() == ray.worker.LOCAL_MODE:
+            old_dir = os.getcwd()
+            try:
+                os.chdir(trial.logdir)
+                yield
+            finally:
+                os.chdir(old_dir)
+        else:
+            yield
+
+    def fetch_result(self, trial) -> List[Trial]:
+        """Fetches result list of the running trials.
+
+        Returns:
+            Result of the most recent trial training run.
+        """
+        trial_future = self._find_item(self._running, trial)
+        if not trial_future:
+            raise ValueError("Trial was not running.")
+        self._running.pop(trial_future[0])
+        with warn_if_slow("fetch_result"):
+            result = ray.get(trial_future[0], timeout=DEFAULT_GET_TIMEOUT)
+
+        # For local mode
+        if isinstance(result, _LocalWrapper):
+            result = result.unwrap()
+
+        if not isinstance(result, list):
+            return [result]
+        return result
+
+    def _find_item(self, dictionary, item):
+        out = [rid for rid, t in dictionary.items() if t is item]
+        return out
+
+
+    def get_next_available_trial(self, timeout: Optional[float] = None) -> Optional[Trial]:
+        
+        if not self._running:
+            return None
+        shuffled_results = list(self._running.keys())
+        random.shuffle(shuffled_results)
+
+        # Note: We shuffle the results because `ray.wait` by default returns
+        # the first available result, and we want to guarantee that slower
+        # trials (i.e. trials that run remotely) also get fairly reported.
+        # See https://github.com/ray-project/ray/issues/4211 for details.
+        start = time.time()
+        ready, _ = ray.wait(shuffled_results, timeout=timeout)
+        if not ready:
+            return None
+        result_id = ready[0]
+        wait_time = time.time() - start
+        if wait_time > NONTRIVIAL_WAIT_TIME_THRESHOLD_S:
+            self._last_nontrivial_wait = time.time()
+        if time.time() - self._last_nontrivial_wait > BOTTLENECK_WARN_PERIOD_S:
+            logger.warning(
+                "Over the last {} seconds, the Tune event loop has been "
+                "backlogged processing new results. Consider increasing your "
+                "period of result reporting to improve performance.".format(
+                    BOTTLENECK_WARN_PERIOD_S))
+
+            self._last_nontrivial_wait = time.time()
+        return self._running[result_id]
+
+
+
+    def _train(self, trial):
+        """Start one iteration of training and save remote id."""
+        if self._find_item(self._paused, trial):
+            raise TuneError(
+                "Should not call `train` on PAUSED trial {}. "
+                "This is an internal error - please file an issue "
+                "on https://github.com/ray-project/ray/issues/.".format(
+                    str(trial)))
+
+        if self._find_item(self._running, trial):
+            logging.debug(
+                "Trial {} already has a queued future. Skipping this "
+                "`train` call. This may occur if a trial has "
+                "been unpaused within a scheduler callback.".format(
+                    str(trial)))
+            return
+
+        assert trial.status == Trial.RUNNING, trial.status
+        buffer_time_s = max(
+            self._buffer_min_time_s,
+            min(self._buffer_max_time_s,
+                len(self._running) // 10))
+        with self._change_working_directory(trial):
+            buffer_length = self._buffer_length
+
+            # If buffer length has not been explicitly set, we determine
+            # it automatically
+            if buffer_length is None:
+                if trial.checkpoint_at_end:
+                    # If a trial checkpoint can be triggered externally,
+                    # it is not safe to buffer results.
+                    buffer_length = 1
+                else:
+                    # Else, use the default buffer length
+                    buffer_length = self._default_buffer_length
+            else:
+                if trial.checkpoint_at_end:
+                    if log_once("trial_executor_buffer_checkpoint"):
+                        logger.warning(
+                            "You passed `checkpoint_at_end` to `tune.run()`, "
+                            "but still requested buffered training. "
+                            "If used with a custom stopper or early stopping, "
+                            "checkpoints may be created later than desired.")
+
+            if buffer_length > 1:
+                if trial.checkpoint_freq > 0:
+                    buffer_length = min(buffer_length, trial.checkpoint_freq)
+                remote = trial.runner.train_buffered.remote(
+                    buffer_time_s, buffer_length)
+            else:
+                remote = trial.runner.train.remote()
+
+        # Local Mode
+        if isinstance(remote, dict):
+            remote = _LocalWrapper(remote)
+
+        self._running[remote] = trial
+        trial_item = self._find_item(self._running, trial)
+        assert len(trial_item) < 2, trial_item
+
+
+
+
+    '''
+    Everything above is mostly unmodified stuff from ray trial executor
+    '''
+
+    def stage_and_update_status(self, trials: Iterable[Trial]):
+        """Check and update statuses of scheduled placement groups.
+
+        Stages placement groups of all trials.
+        """
+        return True
+
+    def in_staging_grace_period(self) -> bool:
+        """Returns True if trials have recently been staged."""
+        return False
+
+    def cleanup(self, trials: List[Trial]) -> None:
+        self._trial_cleanup.cleanup(partial=False)
 
 
     def _get_app_id(self):
@@ -155,19 +402,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
         if trial_runner.is_finished():
             self._notify_tune_finished()
 
-        self._just_staged_trials.clear()
-
-        if time.time() > self.last_pg_recon + self.pg_recon_interval:
-            # Only do this every now and then - usually the placement groups
-            # should not get out of sync, and calling this often is inefficient
-            self._pg_manager.reconcile_placement_groups(trials)
-            self.last_pg_recon = time.time()
-
-        self._pg_manager.cleanup()
-
-
-
-
     def _stop_trial_runner(self, trial_runner):
         """
         This tries to stop the ongoing trial runner by setting all trial decisions to Stop
@@ -182,7 +416,25 @@ class MyRayTrialExecutor(RayTrialExecutor):
     def on_step_begin(self, trial_runner) -> None:
         """Before step() is called, update the available resources."""
 
+
+
+        # print(")
+        msg = ["++++++++++++++++++++++++++++++"]
+        msg.append(f"DEBUG: on_step_begin called. tune_started: {self._tune_started} app_id: {self._get_app_id()}")
+        # msg.append(f"DEBUG: available_resources: {self._avail_resources} ray_available: {ray.available_resources()}")
+        msg.append(self.debug_string())
+
+
+
+
+
         trials = trial_runner.get_trials()
+
+        for trial in trials:
+            msg.append(f"Trial_id: {trial.trial_id} status: {trial.status} can fulfill?: {self.has_resources_for_trial(trial)}")
+
+
+
 
         if not self._tune_started:
             self._notify_tune_start()
@@ -211,6 +463,8 @@ class MyRayTrialExecutor(RayTrialExecutor):
         if self._avail_resources >= self._demand:
             if self._demand > self._committed_resources:
 
+                msg.append("DEBUG: need to unpause cond(1)")
+
                 """
                 Unpause/unpreempt d-c trials.
                 Currently not doing anything special - assuming/relying on trial_scheduler
@@ -229,6 +483,9 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 Currently not doing anything special - assuming/relying on trial_scheduler
                 to keep choosing paused trials in order
                 """
+
+                msg.append("DEBUG: need to unpause cond(2)")
+
                 pass
             elif self._avail_resources == self._committed_resources:
                 # do nothing
@@ -250,6 +507,15 @@ class MyRayTrialExecutor(RayTrialExecutor):
             
         self._trial_just_finished_before = self._trial_just_finished
         self._trial_just_finished = False
+
+        self._steps += 1
+
+
+        msg.append(msg[0])
+
+        if self._steps % 10 == 0 and self._get_app_id() == 0:
+            pass
+            # print("\n".join(msg))
 
 
     def has_resources(self, resources: Resources) -> bool:
@@ -299,17 +565,28 @@ class MyRayTrialExecutor(RayTrialExecutor):
                     checkpoint: Optional[Checkpoint] = None,
                     train: bool = True) -> bool:
 
-        
-        has_resources =  self.has_resources_for_trial(trial)
 
-        if has_resources:
+
+        if self.has_resources_for_trial(trial):
 
             prior_status = trial.status
 
+            msg = ["++++++++++++++++++++++++++++++"]
+            msg.append(f"Attempting to start trial: {trial.trial_id}")
+
+
             start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+            # start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+
+            msg.append(f"Start trial for {trial.trial_id} Successful?: {start_val}")
+            msg.append(msg[0])
+
+            if self._steps % 10 == 0 and self._get_app_id() == 1:
+                pass
+                # print("\n".join(msg))
+
 
             if start_val:
-                # print(f"committing resource to trial: {trial.trial_id}")
                 self._commit_resources(trial.resources)
                 
                 if prior_status == Trial.PENDING:
@@ -318,6 +595,119 @@ class MyRayTrialExecutor(RayTrialExecutor):
             return start_val
         
         return False
+
+    def _start_trial(self, trial, checkpoint=None, runner=None,
+                     train=True) -> bool:
+        """Starts trial and restores last result if trial was paused.
+
+        Args:
+            trial (Trial): The trial to start.
+            checkpoint (Optional[Checkpoint]): The checkpoint to restore from.
+                If None, and no trial checkpoint exists, the trial is started
+                from the beginning.
+            runner (Trainable): The remote runner to use. This can be the
+                cached actor. If None, a new runner is created.
+            train (bool): Whether or not to start training.
+
+        Returns:
+            True if trial was started successfully, False otherwise.
+
+        See `RayTrialExecutor.restore` for possible errors raised.
+        """
+
+
+        msg = ["++++++++++++++++++++++++++++++"]
+        msg.append(f"Attempting to _start trial: {trial.trial_id}")
+
+
+        successful = True
+
+        prior_status = trial.status
+        self.set_status(trial, Trial.PENDING)
+        if runner is None:
+            runner = self._setup_remote_runner(trial)
+            if not runner:
+                successful  = False
+                # return False
+
+        if successful:
+            trial.set_runner(runner)
+            self._notify_trainable_of_new_resources_if_needed(trial)
+            self.restore(trial, checkpoint)
+            self.set_status(trial, Trial.RUNNING)
+
+            if trial in self._staged_trials:
+                self._staged_trials.remove(trial)
+
+            previous_run = self._find_item(self._paused, trial)
+            if prior_status == Trial.PAUSED and previous_run:
+                # If Trial was in flight when paused, self._paused stores result.
+                self._paused.pop(previous_run[0])
+                self._running[previous_run[0]] = trial
+            elif train and not trial.is_restoring:
+                self._train(trial)
+
+        msg.append(f"Successful?: {successful} runner is None: {runner is None}")
+        msg.append(msg[0])
+        if self._steps % 10 == 0 and self._get_app_id() == 0:
+            # print("\n".join(msg))
+            pass
+
+        return successful
+
+    def _setup_remote_runner(self, trial):
+        trial.init_logdir()
+        # We checkpoint metadata here to try mitigating logdir duplication
+        self.try_checkpoint_metadata(trial)
+        logger_creator = partial(noop_logger_creator, logdir=trial.logdir)
+
+        trainable_cls = trial.get_trainable_cls()
+        if not trainable_cls:
+            raise AbortTrialExecution(
+                f"Invalid trainable: {trial.trainable_name}. If you passed "
+                f"a string, make sure the trainable was registered before.")
+
+
+        print(f"DEBUG: trail {trial.trial_id} got trainable_cls: {trainable_cls}")
+        _actor_cls = _class_cache.get(trainable_cls)
+
+
+        full_actor_class = _actor_cls.options(
+            num_cpus=trial.resources.cpu,
+            num_gpus=trial.resources.gpu,
+            memory=trial.resources.memory or None,
+            object_store_memory=trial.resources.object_store_memory
+            or None,
+            resources=trial.resources.custom_resources)
+
+        # Clear the Trial's location (to be updated later on result)
+        # since we don't know where the remote runner is placed.
+        trial.set_location(Location())
+        logger.debug("Trial %s: Setting up new remote runner.", trial)
+        # Logging for trials is handled centrally by TrialRunner, so
+        # configure the remote runner to use a noop-logger.
+        trial_config = copy.deepcopy(trial.config)
+        trial_config[TRIAL_INFO] = TrialInfo(trial)
+
+        stdout_file, stderr_file = trial.log_to_file
+        trial_config[STDOUT_FILE] = stdout_file
+        trial_config[STDERR_FILE] = stderr_file
+        kwargs = {
+            "config": trial_config,
+            "logger_creator": logger_creator,
+        }
+        if issubclass(trial.get_trainable_cls(), DurableTrainable):
+            kwargs["remote_checkpoint_dir"] = trial.remote_checkpoint_dir
+            kwargs["sync_function_tpl"] = trial.sync_to_cloud
+
+
+        print(f"DEBUG: trial: {trial.trial_id} got actor: {full_actor_class}")
+
+        with self._change_working_directory(trial):
+            return full_actor_class.remote(**kwargs)
+
+
+
 
     # have to overload this to pass in an extra parameter to stop_trail
     def pause_trial(self, trial: Trial) -> None:
@@ -354,11 +744,61 @@ class MyRayTrialExecutor(RayTrialExecutor):
         super(MyRayTrialExecutor, self).stop_trial(trial, error, error_msg, destroy_pg_if_cannot_replace)
         self._return_resources(trial.resources)
 
-        print(f"Stopping trail_id: {trial.trial_id} status: {trial.status}")
+        if pause_only:
+            print(f"Pausing trail_id: {self._get_app_id()}_{trial.trial_id} status: {trial.status}")
+        else:
+            print(f"Stopping trail_id: {self._get_app_id()}_{trial.trial_id} status: {trial.status}")
+
 
         if not pause_only:
             # stop_trial was not called by pause_trial
             self._notify_trial_end(trial)
+
+
+    def _stop_trial(self,
+                    trial: Trial,
+                    error=False,
+                    error_msg=None,
+                    destroy_pg_if_cannot_replace=True):
+        """Stops this trial.
+
+        Stops this trial, releasing all allocating resources. If stopping the
+        trial fails, the run will be marked as terminated in error, but no
+        exception will be thrown.
+
+        If the placement group will be used right away
+        (destroy_pg_if_cannot_replace=False), we do not remove its placement
+        group (or a surrogate placement group).
+
+        Args:
+            error (bool): Whether to mark this trial as terminated in error.
+            error_msg (str): Optional error message.
+
+        """
+        self.set_status(trial, Trial.ERROR if error else Trial.TERMINATED)
+        self._trial_just_finished = True
+        trial.set_location(Location())
+
+        try:
+            trial.write_error_log(error_msg)
+            if hasattr(trial, "runner") and trial.runner:
+
+                should_destroy_actor = True
+
+                if should_destroy_actor:
+                    logger.debug("Trial %s: Destroying actor.", trial)
+
+                    with self._change_working_directory(trial):
+                        self._trial_cleanup.add(trial, actor=trial.runner)
+
+                if trial in self._staged_trials:
+                    self._staged_trials.remove(trial)
+
+        except Exception:
+            logger.exception("Trial %s: Error stopping runner.", trial)
+            self.set_status(trial, Trial.ERROR)
+        finally:
+            trial.set_runner(None)
 
 
 

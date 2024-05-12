@@ -1112,7 +1112,7 @@ class TrialRunner:
             trial.trial_id, decision)
 
         # Stopping always takes precedence. If we decided to stop, just quit
-        if old_decision is TrialScheduler.STOP:
+        if old_decision is TrialScheduler.STOP or old_decision is TrialScheduler.PAUSE:
             return
 
         # The old decision wasn't STOP. We update the decision only if it is
