@@ -49,7 +49,7 @@ def remote_runner(func, args):
     return {"result": res, "total_time": (tock-tick).total_seconds()}
 
 
-def main(args):
+def run_multiple(args):
     if not ray.is_initialized():
         if ray.__version__ == '2.0.0.dev0':
             ray.init(ignore_reinit_error=True, address="auto")
@@ -76,12 +76,18 @@ def main(args):
         results[k] = ray.get(v)
     return results
 
+
 if __name__ == '__main__':
     
     # when MCS specified in policies, it is the callers responsibility to ensure valid configs are passed
     # all configs will be used for all policies
 
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "-output_file", help=".pkl output file to store summary", default = "output.pkl", type=str
+    )
+
     
     parser.add_argument(
         "-num_apps", nargs="+", help="space seperated num_apps to try.", default = [512], type=int
@@ -112,6 +118,7 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
-    results = main(args)
+    results = run_multiple(args)
 
-    print(results)
+    with open(args.output_file, 'wb') as fp:
+        pickle.dump(results, fp)
