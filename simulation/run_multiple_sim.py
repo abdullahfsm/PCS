@@ -33,11 +33,11 @@ class SimArgs:
     output_file: str
     scheduling_policy: str
     MCS_config_file: Union[str, None]
-    p_error: Union[float, None]
     estimate: int = 1
     models: str = "linear"
-    trace: Union[str, None]
     logging: int = 1
+    p_error: Union[float, None] = None
+    trace: Union[str, None] = None
 
 
 @ray.remote
