@@ -131,6 +131,7 @@ def get_fig10_data():
     for scheduler in ["AFS", "FIFO", "PCS"]:
         fp = os.path.join(os.path.dirname(__file__), "..", "data", "fig10", f"error_analysis_{scheduler}")
         data[scheduler] = _read_error_analysis(fp)
+
     return data
 
 def _read_error_analysis(fp):
@@ -148,6 +149,7 @@ def _read_error_analysis(fp):
     factor = output[0]["avg JCT"]
     for k in output:
         output[k]["avg JCT"] /= factor
+
     return output
 
 

@@ -14,7 +14,8 @@ import datetime
 
 
 
-DEFAULT_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..' , 'data', 'PCS_configs')) 
+CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..' , 'data', 'PCS_configs')) 
+RESULT_SAVE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..' , 'new_data')) 
 
 
 from sim import (
@@ -68,15 +69,25 @@ def run_multiple(args):
                         for p in args.scheduling_policies:                            
                             for c in args.PCS_configs if p == 'MCS' else [None]:
                                 for e in args.p_error:
-                                    sim_args = SimArgs(n,g,w,l,s,f"{str(uuid.uuid4())}.csv",p,c,e)
+                                    sim_args = SimArgs(n,g,w,l,s, os.path.join(RESULT_SAVE_PATH,f"{str(uuid.uuid4())}.csv"),p,c,e)
                                     futures[sim_args] = remote_runner.remote(run_sim, sim_args)
 
     results = {}
 
     for k,v in futures.items():
         results[k] = ray.get(v)
-    return results
 
+    # SYNCING RESULT FILES - This will overwrite stuff:
+
+    try:
+        workers = ray.nodes()
+        for w in workers:
+            w_ip = w.get('NodeManagerAddress')
+            os.system(f"rsync -av {w_ip}:{RESULT_SAVE_PATH}/*.csv {RESULT_SAVE_PATH}/")
+    except Exception as e:
+        print(f"Error: unable to sync files across worker nodes: {e} --- please do it manually")
+
+    return results
 
 if __name__ == '__main__':
     
@@ -115,7 +126,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "-PCS_configs", nargs="+", help="space seperated MCS_configs to try.", default = [os.path.join(DEFAULT_CONFIG_PATH, 'PCS_config_themis1_bal.pkl')], type=str
+        "-PCS_configs", nargs="+", help="space seperated MCS_configs to try.", default = [os.path.join(CONFIG_PATH, 'PCS_config_themis1_bal.pkl')], type=str
     )
 
     parser.add_argument(

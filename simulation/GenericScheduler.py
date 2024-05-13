@@ -90,8 +90,6 @@ class AppGenericScheduler(object):
         self._perf_timer = []
 
 
-
-
         '''
         class EWMA(object):
             """docstring for EWMA"""
