@@ -5,6 +5,7 @@ import ray
 from dataclasses import dataclass
 from typing import List
 from typing import Optional
+from typing import Union
 from enum import Enum
 import uuid
 
@@ -31,11 +32,11 @@ class SimArgs:
     seed: int
     output_file: str
     scheduling_policy: str
-    MCS_config_file: str | None
-    p_error: float| None = None
+    MCS_config_file: Union[str, None]
+    p_error: Union[float, None]
     estimate: int = 1
     models: str = "linear"
-    trace: str | None = None
+    trace: Union[str, None]
     logging: int = 1
 
 
