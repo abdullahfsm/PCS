@@ -1,0 +1,115 @@
+import os
+import sys
+import argparse
+import ray
+from dataclasses import dataclass
+from typing import List
+from typing import Optional
+from enum import Enum
+import uuid
+
+import pickle
+import datetime
+
+
+
+DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..' , 'data', 'PCS_configs')
+
+from sim import (
+    run_sim,
+    TRACES,
+    WORKLOADS,
+)
+
+
+@dataclass(eq=True, frozen=True)
+class SimArgs:
+    num_apps:int
+    num_gpus: int
+    workload: str
+    load: float
+    seed: int
+    output_file: str
+    scheduling_policy: str
+    MCS_config_file: str | None
+    p_error: float| None = None
+    estimate: int = 1
+    models: str = "linear"
+    trace: str | None = None
+    logging: int = 1
+
+
+@ray.remote
+def remote_runner(func, args):
+    tick = datetime.now()
+    res = func(args)
+    tock.now()
+    return {"result": res, "total_time": (tock-tick).total_seconds()}
+
+
+def main(args):
+    if not ray.is_initialized():
+        if ray.__version__ == '2.0.0.dev0':
+            ray.init(ignore_reinit_error=True, address="auto")
+        elif ray.__version__ == '2.10.0':
+            ray.init(ignore_reinit_error=True, address="auto", runtime_env={"env_vars": {"PYTHONPATH": "${PYTHONPATH}:"+f"{os.path.dirname(__file__)}/"}})
+        else:
+            print("Warning: Untested Ray version --- may result in erroneous behaviour")
+
+    futures = {}
+
+    for n in args.num_apps:
+        for g in args.num_gpus:
+            for l in args.loads:
+                for s in args.seeds:
+                    for w in args.workloads:
+                        for p in args.scheduling_policies:                            
+                            for c in args.PCS_configs if p == 'MCS' else [None]:
+                                sim_args = SimArgs(n,g,w,l,s,f"{str(uuid.uuid4())}.csv",p,c)
+                                futures[sim_args] = remote_runner.remote(run_sim, sim_args)
+
+    results = {}
+
+    for k,v in futures.items():
+        results[k] = ray.get(v)
+    return results
+
+if __name__ == '__main__':
+    
+    # when MCS specified in policies, it is the callers responsibility to ensure valid configs are passed
+    # all configs will be used for all policies
+
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument(
+        "-num_apps", nargs="+", help="space seperated num_apps to try.", default = [512], type=int
+    )
+
+    parser.add_argument(
+        "-num_gpus", nargs="+", help="space seperated num_gpus to try.", default = [64], type=int
+    )
+
+    parser.add_argument(
+        "-loads", nargs="+", help="space seperated loads to try.", default = [0.8], type=float
+    )
+
+    parser.add_argument(
+        "-seeds", nargs="+", help="space seperated seeds to try.", default = [4567], type=int
+    )
+
+    parser.add_argument(
+        "-workloads", nargs="+", help="space seperated workloads to try.", default = ["themis1"], type=int
+    )
+
+    parser.add_argument(
+        "-scheduling_policies", nargs="+", help="space seperated scheduling policies to try.", default = ["MCS"], type=str
+    )
+
+    parser.add_argument(
+        "-PCS_configs", nargs="+", help="space seperated MCS_configs to try.", default = [os.path.join(DEFAULT_CONFIG_PATH, 'PCS_config_themis1_bal.pkl')], type=str
+    )
+
+    args = parser.parse_args()
+    results = main(args)
+
+    print(results)
