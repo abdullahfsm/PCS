@@ -79,67 +79,9 @@ class AppAFSScheduler(AppGenericScheduler):
             thrpt = min(app.demand, app_current_allocation)
 
         if thrpt > 0:        
-            return app.remaining_service/thrpt
-
-        # else:
-        #     print(f"thrpt is: {thrpt} remaining_service: {app.remaining_service}")
+            return app.estimated_remaining_service/thrpt
 
         return float('inf')
-
-
-    def top_priority(self, current_allocation):
-        while True:
-            a_star = np.random.choice(self._active_apps)
-            if a_star.demand > 0:
-                break
-
-
-        for app in self._active_apps:
-            if app.app_id == a_star.app_id or app.demand == 0:
-                continue
-
-
-            app_a, app_b = a_star, app
-
-            if current_allocation[app_a.app_id] == 0 and current_allocation[app_b.app_id] == 0:
-                if app_a.estimated_remaining_service < app_b.estimated_remaining_service:
-                    a_star = app_a
-                else:
-                    a_star = app_b
-            else:
-
-                # app_a_remaining_time = app_a.remaining_service/current_allocation[app_a.app_id] if current_allocation[app_a.app_id] > 0 else float('inf')
-                # app_b_remaining_time = app_b.remaining_service/current_allocation[app_b.app_id] if current_allocation[app_b.app_id] > 0 else float('inf')
-
-                app_a_remaining_time = self.compute_remaining_time(app_a, current_allocation[app_a.app_id])
-                app_b_remaining_time = self.compute_remaining_time(app_b, current_allocation[app_b.app_id])
-
-                if app_a_remaining_time >= app_b_remaining_time:
-                    app_a, app_b = app_b, app_a
-
-                    # throughput with current allocation
-                    p_a, p_b = app_a.jobs[0].thrpt(current_allocation[app_a.app_id]), app_b.jobs[0].thrpt(current_allocation[app_b.app_id])
-
-
-                    if current_allocation[app_a.app_id] < app_a.demand and current_allocation[app_b.app_id] < app_b.demand:
-                        # throughput with extra GPU
-                        p_a_p = app_a.jobs[0].thrpt(current_allocation[app_a.app_id]+1)
-                        p_b_p = app_b.jobs[0].thrpt(current_allocation[app_b.app_id]+1)
-
-                        if (p_b_p - p_b)/p_b_p > (p_a_p - p_a)/p_a_p:
-                            a_star = app_b
-                        else:
-                            a_star = app_a
-
-                    elif current_allocation[app_a.app_id] == app_a.demand:
-                        a_star = app_b
-                    elif current_allocation[app_b.app_id] == app_b.demand:
-                        a_star = app_a
-                    else:
-                        print("shouldnt be here")
-        return a_star
-
-
 
     def compute_allocation(self, event_time):
     
@@ -162,62 +104,5 @@ class AppAFSScheduler(AppGenericScheduler):
 
 
         assert(math.isclose(residual, 0, abs_tol=1e-3)), residual
-
-        # print(app_id_to_allocation)
-
-
-        
-        # total_demand = sum([app.demand for app in self._active_apps])
-
-        # residual = min(total_demand, self._max_capacity)
-
-        # app_id_to_allocation = {}
-        
-        # for app in self._active_apps:
-        #     app_id_to_allocation[app.app_id] = 0
-
-    
-        # while residual > 0:
-
-        #     app = self.top_priority(app_id_to_allocation)
-
-        #     allocation = 1 if app_id_to_allocation[app.app_id] < app.demand else 0
-
-        #     app_id_to_allocation[app.app_id] += allocation
-            
-        #     residual -= allocation
-
-
-        # assert(math.isclose(residual, 0)), residual
-
-
-        return app_id_to_allocation
-
-    def compute_allocation_old(self, event_time):
-        
-        
-        total_demand = sum([app.demand for app in self._active_apps])
-
-        residual = min(total_demand, self._max_capacity)
-
-        app_id_to_allocation = {}
-        
-        for app in self._active_apps:
-            app_id_to_allocation[app.app_id] = 0
-
-    
-        while residual > 0:
-
-            app = self.top_priority(app_id_to_allocation)
-
-            allocation = 1 if app_id_to_allocation[app.app_id] < app.demand else 0
-
-            app_id_to_allocation[app.app_id] += allocation
-            
-            residual -= allocation
-
-
-        assert(math.isclose(residual, 0)), residual
-
 
         return app_id_to_allocation

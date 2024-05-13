@@ -34,10 +34,10 @@ class SimArgs:
     output_file: str
     scheduling_policy: str
     MCS_config_file: Union[str, None]
+    p_error: Union[float, None] = None
     estimate: int = 1
     models: str = "linear"
     logging: int = 1
-    p_error: Union[float, None] = None
     trace: Union[str, None] = None
 
 
@@ -67,8 +67,9 @@ def run_multiple(args):
                     for w in args.workloads:
                         for p in args.scheduling_policies:                            
                             for c in args.PCS_configs if p == 'MCS' else [None]:
-                                sim_args = SimArgs(n,g,w,l,s,f"{str(uuid.uuid4())}.csv",p,c)
-                                futures[sim_args] = remote_runner.remote(run_sim, sim_args)
+                                for e in args.p_error:
+                                    sim_args = SimArgs(n,g,w,l,s,f"{str(uuid.uuid4())}.csv",p,c,e)
+                                    futures[sim_args] = remote_runner.remote(run_sim, sim_args)
 
     results = {}
 
@@ -116,6 +117,11 @@ if __name__ == '__main__':
     parser.add_argument(
         "-PCS_configs", nargs="+", help="space seperated MCS_configs to try.", default = [os.path.join(DEFAULT_CONFIG_PATH, 'PCS_config_themis1_bal.pkl')], type=str
     )
+
+    parser.add_argument(
+        "-p_error", nargs="+", help="space seperated error percentage to try.", default = [0.0], type=float
+    )
+
 
     args = parser.parse_args()
     results = run_multiple(args)

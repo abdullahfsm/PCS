@@ -165,14 +165,10 @@ class AppGenericScheduler(object):
         if self._p_error and self._estimator:
 
             if app.induced_error == 0:
-
-
-                
-
                 app.induced_error = (1.0 + random.uniform(-1.0*(self._p_error/100.0),(self._p_error/100.0)))
             
             for job in app.jobs.values():
-                job.estimated_remaining_service = max(job.remaining_service*app.induced_error, 0.0)
+                job.estimated_remaining_service = max(job.remaining_service*app.induced_error, 1e-2)
         else:
             for job in app.jobs.values():
                 job.estimated_remaining_service = job.remaining_service
