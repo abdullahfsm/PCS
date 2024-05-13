@@ -414,7 +414,6 @@ def run(
         result_buffer_length=result_buffer_length)
 
 
-    print(type(trial_executor))
 
 
 
@@ -453,7 +452,7 @@ def run(
         logger.debug("Ignoring some parameters passed into tune.run.")
 
 
-    print(f"DEBUG: {experiments} isExpt: {isinstance(experiments[0], Experiment)}")
+    
 
 
     if sync_config.sync_to_cloud:
@@ -548,7 +547,7 @@ def run(
         metric=metric)
 
 
-    print(f"DEBUG: search_alg: {search_alg} type: {type(search_alg)}")
+    
 
     if not runner.resumed:
         for exp in experiments:

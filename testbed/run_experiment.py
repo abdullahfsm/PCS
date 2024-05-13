@@ -349,7 +349,7 @@ if __name__ == '__main__':
         # class_detail = {"num_classes": 2, "class_thresholds": [500.0, float('inf')], "class_rates": [0.75,0.25]}
 
         if args.MCS_config_file == None:
-            class_detail = {"num_classes": 3, "class_thresholds": [1523, 5088, float('inf')], "class_rates": [frac(889,1000),frac(1,10),frac(11,1000)]}
+            class_detail = {"num_classes": 3, "class_thresholds": [1523, 5088, float('inf')], "class_rates": [frac(889,1000),frac(1,10),frac(11,1000)], "clip_demand_factor": 0.01, "delta": 0.01}
         else:
             with open(args.MCS_config_file, "rb") as fp:
                 class_detail = pickle.load(fp)
