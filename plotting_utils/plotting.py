@@ -1049,8 +1049,8 @@ def plot_fig9():
     return plot_fig9a(), plot_fig9b(), plot_fig9c()
 
 
-def plot_fig9a():
-    data = dl.get_fig9a_data()
+def plot_fig9a(data=None):
+    data = data or dl.get_fig9a_data()
     x_labels = data["gpus"]
     sizes = ["512", "1024"]
     bar_values = [data[key]["values"] for key in sizes]

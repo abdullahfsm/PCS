@@ -36,6 +36,10 @@
 * Run `bash run_workload3.sh`
 * Once the script finishes, you can use `figure8_plot.ipynb` to analyze and plot figure 8a,8b
 
+## Reproducing Figure 9 Data
+* Run `bash profile_time_per_sim.sh`
+* Once the script finishes, you can use `figure9a_plot.ipynb` to analyze and plot figure 9a
+
 
 ## Running Simulation 
 
