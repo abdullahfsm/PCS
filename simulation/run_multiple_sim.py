@@ -14,7 +14,8 @@ import datetime
 
 
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..' , 'data', 'PCS_configs')
+DEFAULT_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..' , 'data', 'PCS_configs')) 
+
 
 from sim import (
     run_sim,
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "-workloads", nargs="+", help="space seperated workloads to try.", default = ["themis1"], type=int
+        "-workloads", nargs="+", help="space seperated workloads to try.", default = ["themis1"], type=str
     )
 
     parser.add_argument(
