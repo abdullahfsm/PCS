@@ -5,7 +5,7 @@ traces=()
 # Set num apps between 100-500 for testing. -1 means the entire trace
 num_apps=-1
 
-for trace in {0e4a51,}
+for trace in {0e4a51,ee9e8c,}
 # for trace in {0e4a51,6214e9,6c71a0,b436b2,ee9e8c,}
 do
 	traces+=("$trace")

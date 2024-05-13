@@ -27,3 +27,4 @@ Assuming you can ssh into the head node of a cloudlab cluster:
 
 ## Reproducing Figure 4-6 Data
 * Assuming you have a ray cluster with 16 c240g5 type nodes up and running: Run `bash run_testbed.sh themis1_scaled`
+* This can take a considerable amount of time to run ~5-7 hours for each policy (there are a total of 7 policies by default)
