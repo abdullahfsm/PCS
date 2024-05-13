@@ -42,9 +42,9 @@ class SimArgs:
 
 @ray.remote
 def remote_runner(func, args):
-    tick = datetime.now()
+    tick = datetime.datetime.now()
     res = func(args)
-    tock.now()
+    tock = datetime.datetime.now()
     return {"result": res, "total_time": (tock-tick).total_seconds()}
 
 
