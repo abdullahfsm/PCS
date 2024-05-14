@@ -1179,17 +1179,8 @@ def plot_fig9c():
 def plot_fig10():    
     return plot_fig10a(), plot_fig10b()
 
-def plot_fig10a():
-    data = dl.get_fig10_data()
-    return _plot_fig10a(data)
-
-def plot_fig10b():
-    data = dl.get_fig10_data()
-    return _plot_fig10b(data)
-
-
-
-def _plot_fig10a(data):
+def plot_fig10a(data=None):
+    data = data or dl.get_fig10_data()
     x_labels = list(data["PCS"].keys())
     schedulers = ["PCS", "FIFO"]
     bar_values = [
@@ -1222,7 +1213,9 @@ def _plot_fig10a(data):
     _save_image("graphs", "fig10a.pdf")
     return ax
 
-def _plot_fig10b(data):
+
+def plot_fig10b(data=None):
+    data = data or dl.get_fig10_data()
     x_labels = list(data["PCS"].keys())
     schedulers = ["PCS", "AFS"]
     bar_values = [[data[key][k]["avg JCT"] for k in x_labels] for key in schedulers]

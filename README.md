@@ -40,6 +40,10 @@
 * Run `bash profile_time_per_sim.sh`
 * Once the script finishes, you can use `figure9a_plot.ipynb` to analyze and plot figure 9a
 
+## Reproducing Figure 10 Data
+* Run `bash profile_sensitivity_error_in_size.sh`
+* Once the script finishes, you can use `figure10_plot.ipynb` to analyze and plot figure 10a,10b
+
 
 ## Running Simulation 
 
