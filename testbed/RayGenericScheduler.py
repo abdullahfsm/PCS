@@ -165,30 +165,6 @@ class RayAppGenericScheduler(AppGenericScheduler):
 
 
 
-    def handle_app_failure_event(self, event):
-        app = self._app_list[event.app_id]
-
-        app.status = App.FAILED
-        
-        app.end_time = event.event_time
-        
-        # remove from active_apps
-        for i, a in enumerate(self._active_apps):
-            if a.app_id == app.app_id:
-                self._active_apps.pop(i)
-                break
-            
-        self._num_finished_apps += 1
-        app.last_event_time = event.event_time
-
-
-        for attr in ['future', 'exec_func', 'trial_runner_queue']:
-            if hasattr(app, attr):
-                delattr(app, attr)
-
-
-
-
     def restart_failed_app(self, app):
         
         for job in app.jobs.values():
@@ -197,6 +173,28 @@ class RayAppGenericScheduler(AppGenericScheduler):
 
         self._event_queue.put(Event(event_id=app.app_id, event_time=datetime.now(), event_type=Event.APP_SUB, app_id=app.app_id))
 
+
+
+    def remove_failed_app(self, app):
+
+        app.status = App.FAILED
+        
+        app.end_time = datetime.now()
+        
+        # remove from active_apps
+        for i, a in enumerate(self._active_apps):
+            if a.app_id == app.app_id:
+                self._active_apps.pop(i)
+                break
+            
+        self._num_finished_apps += 1
+        app.last_event_time = datetime.now()
+
+        ray.cancel(app.future, force=True, recursive=True)
+
+        for attr in ['future', 'exec_func', 'trial_runner_queue']:
+            if hasattr(app, attr):
+                delattr(app, attr)
 
 
     def remove_failed_apps(self):
@@ -208,34 +206,14 @@ class RayAppGenericScheduler(AppGenericScheduler):
                
                 if (datetime.now() - app.last_event_time).total_seconds() > self._inactivity_time:
 
-                    continue
-
                     print(f'***********KILLING APP_{app.app_id} time: {datetime.now()}************')
 
-
-                    num_gets = len(self._event_queue)
-                    for _ in range(num_gets):
-                        e = self._event_queue.get()
-                        print(e)
-
                     app.trial_runner_queue["downlink"].put(-1)
-                    failure_event = Event(event_id=app.app_id, event_type="APP_FAILURE", event_time=datetime.now(), app_id=app.app_id)
-                    self.handle_app_failure_event(failure_event)
-
-                    # print('***********RESTARTING APP************')
-
-                    # self.restart_failed_app(app)
+                    self.remove_failed_app(app)
 
 
                 elif app.remaining_service < -1.0 * self._extra_service:
                     pass
-
-                    '''
-                    app.trial_runner_queue.put(-1)
-                    failure_event = Event(event_id=app.app_id, event_type="APP_FAILURE", event_time=datetime.now(), app_id=app.app_id)
-                    
-                    self.handle_app_failure_event(failure_event)
-                    '''
 
 
 
@@ -289,8 +267,6 @@ class RayAppGenericScheduler(AppGenericScheduler):
             self.handle_job_end_event(event)
         elif event.event_type == "APP_PING":
             self.handle_app_ping_event(event)
-        elif event.event_type == "APP_FAILURE":
-            self.handle_app_failure_event(event)
 
     @ray.remote
     def gen_background_event(event_queue, event, sleep_time):
@@ -340,10 +316,11 @@ class RayAppGenericScheduler(AppGenericScheduler):
         
 
             if (datetime.now() - last_self_check_time).total_seconds() > self._inactivity_time:
+                self.remove_failed_apps()
+                last_self_check_time = datetime.now()
+                resource_change_event = True
                 
-                if len(self._event_queue) <= 5:
-                    self.remove_failed_apps()
-                    last_self_check_time = datetime.now()
+                # if len(self._event_queue) <= 5:
 
             if resource_change_event:
                 self.update_allocations(datetime.now())

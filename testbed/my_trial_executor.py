@@ -160,166 +160,15 @@ class MyRayTrialExecutor(RayTrialExecutor):
         self._steps = 0
 
 
+    '''
+    Everything above is mostly unmodified stuff from ray trial executor
+    '''
+
 
     def set_max_pending_trials(self, max_pending: int) -> None:
         self._max_pending_trials = max(max_pending, self._max_pending_trials)
 
 
-
-    def export_trial_if_needed(self, trial: Trial) -> Dict:
-        """Exports model of this trial based on trial.export_formats.
-
-        Return:
-            A dict that maps ExportFormats to successfully exported models.
-        """
-        if trial.export_formats and len(trial.export_formats) > 0:
-            with self._change_working_directory(trial):
-                return ray.get(
-                    trial.runner.export_model.remote(trial.export_formats),
-                    timeout=DEFAULT_GET_TIMEOUT)
-        return {}
-
-
-    @contextmanager
-    def _change_working_directory(self, trial):
-        """Context manager changing working directory to trial logdir.
-        Used in local mode.
-
-        For non-local mode it is no-op.
-        """
-        if ray.worker._mode() == ray.worker.LOCAL_MODE:
-            old_dir = os.getcwd()
-            try:
-                os.chdir(trial.logdir)
-                yield
-            finally:
-                os.chdir(old_dir)
-        else:
-            yield
-
-    def fetch_result(self, trial) -> List[Trial]:
-        """Fetches result list of the running trials.
-
-        Returns:
-            Result of the most recent trial training run.
-        """
-        trial_future = self._find_item(self._running, trial)
-        if not trial_future:
-            raise ValueError("Trial was not running.")
-        self._running.pop(trial_future[0])
-        with warn_if_slow("fetch_result"):
-            result = ray.get(trial_future[0], timeout=DEFAULT_GET_TIMEOUT)
-
-        # For local mode
-        if isinstance(result, _LocalWrapper):
-            result = result.unwrap()
-
-        if not isinstance(result, list):
-            return [result]
-        return result
-
-    def _find_item(self, dictionary, item):
-        out = [rid for rid, t in dictionary.items() if t is item]
-        return out
-
-
-    def get_next_available_trial(self, timeout: Optional[float] = None) -> Optional[Trial]:
-        
-        if not self._running:
-            return None
-        shuffled_results = list(self._running.keys())
-        random.shuffle(shuffled_results)
-
-        # Note: We shuffle the results because `ray.wait` by default returns
-        # the first available result, and we want to guarantee that slower
-        # trials (i.e. trials that run remotely) also get fairly reported.
-        # See https://github.com/ray-project/ray/issues/4211 for details.
-        start = time.time()
-        ready, _ = ray.wait(shuffled_results, timeout=timeout)
-        if not ready:
-            return None
-        result_id = ready[0]
-        wait_time = time.time() - start
-        if wait_time > NONTRIVIAL_WAIT_TIME_THRESHOLD_S:
-            self._last_nontrivial_wait = time.time()
-        if time.time() - self._last_nontrivial_wait > BOTTLENECK_WARN_PERIOD_S:
-            logger.warning(
-                "Over the last {} seconds, the Tune event loop has been "
-                "backlogged processing new results. Consider increasing your "
-                "period of result reporting to improve performance.".format(
-                    BOTTLENECK_WARN_PERIOD_S))
-
-            self._last_nontrivial_wait = time.time()
-        return self._running[result_id]
-
-
-
-    def _train(self, trial):
-        """Start one iteration of training and save remote id."""
-        if self._find_item(self._paused, trial):
-            raise TuneError(
-                "Should not call `train` on PAUSED trial {}. "
-                "This is an internal error - please file an issue "
-                "on https://github.com/ray-project/ray/issues/.".format(
-                    str(trial)))
-
-        if self._find_item(self._running, trial):
-            logging.debug(
-                "Trial {} already has a queued future. Skipping this "
-                "`train` call. This may occur if a trial has "
-                "been unpaused within a scheduler callback.".format(
-                    str(trial)))
-            return
-
-        assert trial.status == Trial.RUNNING, trial.status
-        buffer_time_s = max(
-            self._buffer_min_time_s,
-            min(self._buffer_max_time_s,
-                len(self._running) // 10))
-        with self._change_working_directory(trial):
-            buffer_length = self._buffer_length
-
-            # If buffer length has not been explicitly set, we determine
-            # it automatically
-            if buffer_length is None:
-                if trial.checkpoint_at_end:
-                    # If a trial checkpoint can be triggered externally,
-                    # it is not safe to buffer results.
-                    buffer_length = 1
-                else:
-                    # Else, use the default buffer length
-                    buffer_length = self._default_buffer_length
-            else:
-                if trial.checkpoint_at_end:
-                    if log_once("trial_executor_buffer_checkpoint"):
-                        logger.warning(
-                            "You passed `checkpoint_at_end` to `tune.run()`, "
-                            "but still requested buffered training. "
-                            "If used with a custom stopper or early stopping, "
-                            "checkpoints may be created later than desired.")
-
-            if buffer_length > 1:
-                if trial.checkpoint_freq > 0:
-                    buffer_length = min(buffer_length, trial.checkpoint_freq)
-                remote = trial.runner.train_buffered.remote(
-                    buffer_time_s, buffer_length)
-            else:
-                remote = trial.runner.train.remote()
-
-        # Local Mode
-        if isinstance(remote, dict):
-            remote = _LocalWrapper(remote)
-
-        self._running[remote] = trial
-        trial_item = self._find_item(self._running, trial)
-        assert len(trial_item) < 2, trial_item
-
-
-
-
-    '''
-    Everything above is mostly unmodified stuff from ray trial executor
-    '''
 
     def stage_and_update_status(self, trials: Iterable[Trial]):
         """Check and update statuses of scheduled placement groups.
@@ -393,24 +242,6 @@ class MyRayTrialExecutor(RayTrialExecutor):
                 self._demand += trial.resources
             
         
-
-    def on_step_end(self, trial_runner) -> None:
-        
-
-        trials = trial_runner.get_trials()
-
-        if trial_runner.is_finished():
-            self._notify_tune_finished()
-
-    def _stop_trial_runner(self, trial_runner):
-        """
-        This tries to stop the ongoing trial runner by setting all trial decisions to Stop
-        """
-
-        trials = trial_runner.get_trials()
-        for trial in trials:
-            trial_runner._queue_decision(trial, TrialScheduler.STOP)
-
 
 
     def on_step_begin(self, trial_runner) -> None:
@@ -518,6 +349,25 @@ class MyRayTrialExecutor(RayTrialExecutor):
             # print("\n".join(msg))
 
 
+    def on_step_end(self, trial_runner) -> None:
+        
+
+        trials = trial_runner.get_trials()
+
+        if trial_runner.is_finished():
+            self._notify_tune_finished()
+
+    def _stop_trial_runner(self, trial_runner):
+        """
+        This tries to stop the ongoing trial runner by setting all trial decisions to Stop
+        """
+
+        trials = trial_runner.get_trials()
+        for trial in trials:
+            trial_runner._queue_decision(trial, TrialScheduler.STOP)
+
+
+
     def has_resources(self, resources: Resources) -> bool:
         """Returns whether this runner has at least the specified resources.
 
@@ -576,7 +426,7 @@ class MyRayTrialExecutor(RayTrialExecutor):
 
 
             start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
-            # start_val = super(MyRayTrialExecutor, self).start_trial(trial, checkpoint, train)
+            
 
             msg.append(f"Start trial for {trial.trial_id} Successful?: {start_val}")
             msg.append(msg[0])

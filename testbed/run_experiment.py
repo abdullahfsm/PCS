@@ -418,7 +418,7 @@ if __name__ == '__main__':
         scheduler = RayAppThemisScheduler(total_gpus=total_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    quantum=200,
+                                    quantum=600,
                                     app_info_fn=output_file)
     else:
         raise NotImplementedError

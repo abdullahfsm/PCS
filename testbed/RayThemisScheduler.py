@@ -152,12 +152,11 @@ class RayAppThemisScheduler(RayAppGenericScheduler):
 
         
 
-            # remove failed apps
             if (datetime.now() - last_self_check_time).total_seconds() > self._inactivity_time:
-                
-                if len(self._event_queue) <= 5:
-                    self.remove_failed_apps()
-                    last_self_check_time = datetime.now()
+                self.remove_failed_apps()
+                last_self_check_time = datetime.now()
+                resource_change_event = True
+
             
             if resource_change_event or redivision_event:
                 self.update_allocations(event.event_time)
