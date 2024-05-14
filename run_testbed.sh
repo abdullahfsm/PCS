@@ -16,7 +16,7 @@ echo "Running trace $trace"
 for var in {jct,bal,pred,}
 do
 	output_file=new_data/PCS_"$var"_"$trace"_result.csv
-	python3 testbed/run_experiment.py -trace trace_"$trace" -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_"$trace"_"$var".pkl -output_file "$output_file"	
+	python3 testbed/run_experiment.py -trace trace_"$trace" -scheduling_policy MCS -MCS_config_file data/PCS_configs/PCS_config_"$trace"_"$var".pkl -output_file "$output_file"
 	echo "$var" done
 done
 

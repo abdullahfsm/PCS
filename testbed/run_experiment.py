@@ -366,7 +366,7 @@ if __name__ == '__main__':
                                     event_queue=event_queue,
                                     app_list=app_list,
                                     class_detail=class_detail,
-                                    quantum=200,
+                                    quantum=600,
                                     app_info_fn=output_file)
     elif scheduling_policy == "SRTF":
 
@@ -405,7 +405,7 @@ if __name__ == '__main__':
         scheduler = RayAppFairScheduler(total_gpus=total_gpus,
                                                 event_queue=event_queue,
                                                 app_list = app_list,
-                                                quantum=200,
+                                                quantum=600,
                                                 app_info_fn=output_file)
 
     elif scheduling_policy == "AFS":
