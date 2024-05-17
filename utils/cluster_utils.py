@@ -22,23 +22,17 @@ if RAY_INSTALLED:
 
 
 
-LOCAL=False
-
 
 user = os.path.expanduser('~')
 user_name = user.split('/')[-1]
 
 
-if LOCAL:
-    list_of_nodes = ["127.0.0.1"]
-    head_node, *worker_nodes = list_of_nodes[:]
-else:
-    with open("/var/emulab/boot/hostmap") as fp:
-        N, *_ = fp.readlines()
-    N = int(N.rstrip())
-    list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
+with open("/var/emulab/boot/hostmap") as fp:
+    N, *_ = fp.readlines()
+N = int(N.rstrip())
+list_of_nodes = ["10.1.1.%d" % (2+node_id) for node_id in list(range(N))]
 
-    head_node, *worker_nodes = list_of_nodes[:]
+head_node, *worker_nodes = list_of_nodes[:]
 
 head_port = 6379
 
@@ -100,11 +94,8 @@ def rsync():
 
 def update_bashrc():
     
-    if LOCAL:
-        os.system(f"cp custom_bashrc.sh ~/.bashrc")
-    else:
-        for node in list_of_nodes:
-            os.system(f"ssh {node} 'cp ~/PCS/utils/custom_bashrc.sh ~/.bashrc'")
+    for node in list_of_nodes:
+        os.system(f"ssh {node} 'cp ~/PCS/utils/custom_bashrc.sh ~/.bashrc'")
 
 def installer(exclude_head=False):
 
@@ -142,10 +133,8 @@ def cluster_reboot():
 def increase_file_limit():
     def check_ulimit(ip, limit):
 
-        if not LOCAL:
-            command = f"ssh {ip} 'ulimit -n'"
-        else:
-            command = f"ulimit -n"
+
+        command = f"ssh {ip} 'ulimit -n'"
 
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         stdout, stderr = process.communicate()
@@ -209,46 +198,38 @@ def run_on_nodes(cmd):
 def install():
     
 
-    if not LOCAL:
-        print("Setting up keys to ssh between cluster nodes")
-        success = setup_keys()
-        
 
-        if not success:
-            print("Failed to set up keys. Exiting!")
-            sys.exit(1)
+    print("Setting up keys to ssh between cluster nodes")
+    success = setup_keys()
+    
+
+    if not success:
+        print("Failed to set up keys. Exiting!")
+        sys.exit(1)
 
     print("Downloading Ray")
     os.system("bash download_ray.sh")    
 
-    if not LOCAL:
-        print("Syncing cluster files")
-        rsync()
-        print("Changing bashrc at every node")
-        update_bashrc()
+
+    print("Syncing cluster files")
+    rsync()
+    print("Changing bashrc at every node")
+    update_bashrc()
 
 
     print("Installing dependencies")
 
-    if not LOCAL:
-        installer()
-    else:
-        os.system("sudo bash local_installer.sh")
+    installer()
 
-    if not LOCAL:
-        print("Activating conda")
-        run_on_nodes("~/miniconda/bin/conda init")
-        run_on_nodes("conda create -y -n osdi24 python=3.6.10")
-        run_on_nodes("echo conda activate osdi24 >> ~/.bashrc")
-        run_on_nodes("conda activate osdi24; cd ~/PCS/utils; python3 -m pip install -r requirements.txt")
-        
-        print("Configuring ray")
-        configure_ray()
-    else:
-        os.system("~/miniconda/bin/conda init")
-        os.system("conda create -y -n osdi24 python=3.6.10")
-        os.system("conda activate osdi24; cd ~/PCS/utils; python3 -m pip install -r requirements.txt")
 
+    print("Activating conda")
+    run_on_nodes("~/miniconda/bin/conda init")
+    run_on_nodes("conda create -y -n osdi24 python=3.6.10")
+    run_on_nodes("echo conda activate osdi24 >> ~/.bashrc")
+    run_on_nodes("conda activate osdi24; cd ~/PCS/utils; python3 -m pip install -r requirements.txt")
+    
+    print("Configuring ray")
+    configure_ray()
 
     print("Increasing ulimit")
     success = increase_file_limit()
@@ -303,11 +284,6 @@ def launch():
         print("Ray not found")
         return
 
-
-    if LOCAL:
-        os.system(f"{ray_dir} stop")
-        os.system(f"{ray_dir} start --head --node-ip-address={head_node} --port={head_port}")
-        return
 
     # stopping all previous instances
     for node in list_of_nodes:

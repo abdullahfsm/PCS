@@ -1,5 +1,4 @@
 #!/bin/bash
-cd ~/PCS/utils
 
 #installing cuda
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin

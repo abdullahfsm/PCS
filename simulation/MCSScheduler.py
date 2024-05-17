@@ -506,7 +506,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
                     event_time=event.event_time
                     + timedelta(seconds=float(next_redivision)),
                     event_type="REDIVISION",
-                ),
+                )
 
 
     def __pick_min_event(self):
