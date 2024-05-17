@@ -6,7 +6,7 @@
 * Run `python3 local_cluster_utils.py install` This script takes a considerable time (~20 min) to install the required dependencies and upon successfully completing will reboot your machine
 * Once your machine is rebooted:
 * * Naviagate to `PCS/utils`
-* * Run `python3 cluster_utils.py launch` This will set up a ray cluster!
+* * Run `python3 local_cluster_utils.py launch` This will set up a ray cluster!
 * * To verify that the cluster has successfully launched, run `ray status` which will show the resources and nodes available to the ray cluster. We are now ready to run our workloads!
 
 
