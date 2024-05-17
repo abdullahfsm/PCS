@@ -59,7 +59,6 @@ class RayAppMCScheduler(RayAppGenericScheduler):
             snap_shot._app_list[virtual_app.app_id] = virtual_app
 
 
-
         snap_shot._suppress_print = True
         snap_shot._verbosity = 0
         snap_shot._init_time = self._init_time
