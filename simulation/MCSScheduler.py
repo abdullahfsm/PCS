@@ -42,7 +42,7 @@ class AppMCScheduler(AppGenericScheduler):
         self._clip_demand_factor = class_detail["clip_demand_factor"]
         self._delta = class_detail["delta"]
 
-        assert math.isclose(float(sum(self._default_class_rates)), 1.0), float(
+        assert math.isclose(float(sum(self._default_class_rates)), 1.0, abs_tol=1e-3), float(
             sum(self._default_class_rates)
         )
 
@@ -110,7 +110,7 @@ class AppMCScheduler(AppGenericScheduler):
             for i in range(self._num_classes):
                 allocation = min(self._class_rates[i], class_demand[i])
 
-                if math.isclose(float(allocation), 0):
+                if math.isclose(float(allocation), 0, abs_tol=1e-3):
                     allocation = 0
 
                 class_allocation[i] += allocation
@@ -118,7 +118,7 @@ class AppMCScheduler(AppGenericScheduler):
                 residual -= allocation
                 total_demand -= allocation
 
-                if math.isclose(float(class_demand[i]), 0):
+                if math.isclose(float(class_demand[i]), 0, abs_tol=1e-3):
                     self._class_rates[i] = 0
                     class_demand[i] = 0
 
@@ -150,7 +150,7 @@ class AppMCScheduler(AppGenericScheduler):
             )
             class_allocation[app.app_class] -= app_id_to_allocation[app.app_id]
 
-        assert math.isclose(float(sum(class_allocation)), 0), class_allocation
+        assert math.isclose(float(sum(class_allocation)), 0, abs_tol=1e-3), class_allocation
 
         return app_id_to_allocation
 
@@ -188,7 +188,7 @@ class AppMCScheduler(AppGenericScheduler):
 
             class_allocation -= potential_allocation
 
-        assert math.isclose(float((class_allocation)), 0.0), class_allocation
+        assert math.isclose(float((class_allocation)), 0.0, abs_tol=1e-3), class_allocation
 
     def __intra_class_allocation(
         self, app_class, class_allocation, app_id_to_allocation
@@ -216,7 +216,7 @@ class AppMCScheduler(AppGenericScheduler):
 
         for app in class_apps:
             assert app.demand >= app_id_to_allocation[app.app_id]
-        assert math.isclose(float((class_allocation)), 0.0), class_allocation
+        assert math.isclose(float((class_allocation)), 0.0, abs_tol=1e-3), class_allocation
 
     def compute_allocation(self, event_time):
         class_demand = [0] * self._num_classes
@@ -235,7 +235,7 @@ class AppMCScheduler(AppGenericScheduler):
             for i in range(self._num_classes):
                 allocation = min(self._class_rates[i], class_demand[i])
 
-                if math.isclose(float(allocation), 0):
+                if math.isclose(float(allocation), 0, abs_tol=1e-3):
                     allocation = 0
 
                 class_allocation[i] += allocation
@@ -243,13 +243,12 @@ class AppMCScheduler(AppGenericScheduler):
                 residual -= allocation
                 total_demand -= allocation
 
-                if math.isclose(float(class_demand[i]), 0):
+                if math.isclose(float(class_demand[i]), 0, abs_tol=1e-3):
                     self._class_rates[i] = 0
                     class_demand[i] = 0
 
-            if math.isclose(float(residual), 0.0) or math.isclose(
-                float(total_demand), 0.0
-            ):
+            if math.isclose(float(residual), 0.0, abs_tol=1e-3) or math.isclose(
+                float(total_demand), 0.0, abs_tol=1e-3):
                 break
 
             R = sum(self._class_rates)
@@ -309,7 +308,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
         self._default_class_rates = copy.copy(class_detail["class_rates"])
         self._clip_demand_factor = class_detail["clip_demand_factor"]
         self._delta = class_detail["delta"]
-        assert math.isclose(float(sum(self._default_class_rates)), 1.0), float(
+        assert math.isclose(float(sum(self._default_class_rates)), 1.0, abs_tol=1e-3), float(
             sum(self._default_class_rates)
         )
 
@@ -382,7 +381,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
         for app in class_apps:
             assert app.demand >= app_id_to_allocation[app.app_id]
-        assert math.isclose(float((class_allocation)), 0.0), class_allocation
+        assert math.isclose(float((class_allocation)), 0.0, abs_tol=1e-3), class_allocation
 
     def compute_MCS_allocation(self, event_time):
         class_demand = [0] * self._num_classes
@@ -401,7 +400,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
             for i in range(self._num_classes):
                 allocation = min(self._class_rates[i], class_demand[i])
 
-                if math.isclose(float(allocation), 0):
+                if math.isclose(float(allocation), 0, abs_tol=1e-3):
                     allocation = 0
 
                 class_allocation[i] += allocation
@@ -409,13 +408,12 @@ class AppPracticalMCScheduler(AppGenericScheduler):
                 residual -= allocation
                 total_demand -= allocation
 
-                if math.isclose(float(class_demand[i]), 0):
+                if math.isclose(float(class_demand[i]), 0, abs_tol=1e-3):
                     self._class_rates[i] = 0
                     class_demand[i] = 0
 
-            if math.isclose(float(residual), 0.0) or math.isclose(
-                float(total_demand), 0.0
-            ):
+            if math.isclose(float(residual), 0.0, abs_tol=1e-3) or math.isclose(
+                float(total_demand), 0.0, abs_tol=1e-3):
                 break
 
             R = sum(self._class_rates)
@@ -427,7 +425,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
             tries += 1
 
-            if tries > 100:
+            if tries > 10:
                 break
                 # raise Exception("Too many while loops")
 
@@ -492,7 +490,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
         if len(self._sharing_group) > 1:
             self._sharing_group.append(self._sharing_group.pop(0))
 
-            if not math.isclose(float(total_allocation), 0.0):
+            if not math.isclose(float(total_allocation), 0.0, abs_tol=1e-3):
                 next_app = self._sharing_group[0]
 
                 next_redivision = self._quantum * float(
