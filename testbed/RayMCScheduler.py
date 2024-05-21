@@ -11,7 +11,7 @@ from fractions import Fraction as frac
 
 from MCSScheduler import AppPracticalMCScheduler
 from common import Event, App, Job
-
+import pickle
 
 class RayAppMCScheduler(RayAppGenericScheduler):
     """docstring for RayAppMCScheduler"""
@@ -74,6 +74,10 @@ class RayAppMCScheduler(RayAppGenericScheduler):
             return False
         
         # snap_shot.run()
+
+        with open("scheduler_snap_shot.pkl", 'ab') as fp:
+            pickle.dump(snap_shot, fp)
+
 
         try:
             snap_shot.run(partial(break_cond, snap_shot._app_list[app.app_id]))
