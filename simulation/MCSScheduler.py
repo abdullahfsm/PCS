@@ -486,6 +486,7 @@ class AppPracticalMCScheduler(AppGenericScheduler):
     def redivision(self, event):
         total_allocation = self._fractional_share
 
+        self._redivision_event = None
         # left shift
         if len(self._sharing_group) > 1:
             self._sharing_group.append(self._sharing_group.pop(0))
