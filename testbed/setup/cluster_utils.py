@@ -196,6 +196,10 @@ def install():
         print("Failed to set up keys. Exiting!")
         sys.exit(1)
 
+    print("Downloading Ray")
+    os.system("bash download_ray.sh")    
+
+
     print("Syncing cluster files")
     rsync()
     print("Changing bashrc at every node")
