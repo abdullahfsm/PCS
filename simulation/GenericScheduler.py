@@ -576,7 +576,13 @@ class AppGenericScheduler(object):
                 if self._verbosity == 4:
                     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
             
+
+            with open("scheduler_"+self._app_info_fn.replace('csv','pkl'), 'wb') as fp:
+                pickle.dump(self, fp)
+
         self.log_apps()
+
+
 
     def util_print_progress(self, event):
         print(f"event_type: {event.event_type} event_time: {(event.event_time - self._init_time).total_seconds()}")
