@@ -7,7 +7,7 @@ from functools import partial
 import ray
 import math
 from time import sleep
-
+from operator import itemgetter
 from common import Event, App, Job
 
 
@@ -28,15 +28,26 @@ def scheduler_run_ray(snap_shot, app_id, event_time):
 
     snap_shot.update_end_events(event_time)
     
+    '''
     def break_cond(v_app):
         if v_app.status == App.END:
             return True
         return False
+    '''
+
+    
+    def break_cond(v_app):
+        return False
+        if v_app.status == App.END:
+            return True
+        return False
+    
 
 
     snap_shot.run(partial(break_cond, snap_shot._app_list[app_id]))
     
-    return app_id, snap_shot._app_list[app_id].start_time, snap_shot._app_list[app_id].end_time
+    return app_id, snap_shot._app_list
+    # return app_id, snap_shot._app_list[app_id].start_time, snap_shot._app_list[app_id].end_time
 
 class AppGenericScheduler(object):
     """This class implements a Generic Scheduler for apps"""
@@ -391,69 +402,17 @@ class AppGenericScheduler(object):
 
 
     def sim_estimate(self, app, event_time):
-
-
-        # tick = datetime.now()
-
-
-        # promise = self._ray_queue.put_async([self._estimator,app.app_id,event_time])
-        # promise = self._ray_queue.put([self._estimator,app.app_id,event_time])
-        
-        # self._snap_shots.append(ray.put([self._active_apps,app.app_id,event_time]))
-        # self._snap_shots.append([self._active_apps,app.app_id,event_time])
         
         estimator = self.__snap_shot()
 
         self._snap_shots.append([estimator,app.app_id,event_time])
-        
-        # pickle.dump([self._active_apps,app.app_id,event_time,self._last_event_time], self._pp)
-        # self._ray_queue.put()
-
-        # f = scheduler_run_ray.remote(self._estimator,app.app_id,event_time)
-        # tock = datetime.now()
                 
-
-        # self._perf_timer.append([len(self._active_apps),(tock-tick).total_seconds()])
-        
-        
         if len(self._snap_shots) == self._estimate_batch:
             future = multi_runner.remote(self._snap_shots)
             self._snap_shots = list()
             return future
         return None
-        
-    def sim_estimate_old(self, app):
-
-        temp_event_queue = self._event_queue
-        temp_app_list = self._app_list
-
-        self._event_queue = list()
-        self._app_list = {}
-
-        snap_shot = copy.deepcopy(self)
-
-        for virtual_app in snap_shot._active_apps:
-            snap_shot._app_list[virtual_app.app_id] = virtual_app
-
-        snap_shot._estimate = False
-        snap_shot._suppress_print = True
-        snap_shot._verbosity = 0
-
-        def break_cond(v_app):
-            if v_app.status == App.END:
-                return True
-            return False
-
-
-        snap_shot.run(partial(break_cond, snap_shot._app_list[app.app_id]))
-        
-        app.update_estimates(snap_shot._app_list[app.app_id].start_time,
-                            snap_shot._app_list[app.app_id].end_time)
-
-        self._event_queue = temp_event_queue
-        self._app_list = temp_app_list
-
-
+      
     def handle_job_end_event(self, event):
         
 
@@ -587,8 +546,6 @@ class AppGenericScheduler(object):
         # ray changes here
         if self._estimator:
 
-
-            
             if len(self._snap_shots) > 0:
                 self._sim_futures.append(multi_runner.remote(self._snap_shots))
 
@@ -604,9 +561,18 @@ class AppGenericScheduler(object):
                 finished, futures = ray.wait(futures)
                 finished_futures += finished
             
+
+            completed_sims = []
             for future in finished_futures:            
-                app_id, estimated_start_time, estimated_end_time = ray.get(future)
-                self._app_list[app_id].update_estimates(estimated_start_time, estimated_end_time)
+                completed_sims.append(ray.get(future))
+
+            completed_sims.sort(key=itemgetter(0))
+
+            for result in completed_sims:
+                _, estimator_app_list = result
+                for app, app_id in estimator_app_list.items():
+                    self._app_list[app_id].update_estimates(app.start_time, app.end_time)
+                
                 if self._verbosity == 4:
                     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
             
