@@ -570,7 +570,7 @@ class AppGenericScheduler(object):
 
             for result in completed_sims:
                 _, estimator_app_list = result
-                for app, app_id in estimator_app_list.items():
+                for app_id, app in estimator_app_list.items():
                     self._app_list[app_id].update_estimates(app.start_time, app.end_time)
                 
                 if self._verbosity == 4:
