@@ -1,8 +1,10 @@
-tensorflow
+scipy
 pandas
 tabulate
 matplotlib
 hiredis
-ray-2.0.0.dev0-cp36-cp36m-manylinux2014_x86_64.whl
+ray
 seaborn
 matplotlib
+jmetal_ray-1-py3-none-any.whl
+numpy

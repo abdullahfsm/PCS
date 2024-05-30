@@ -69,22 +69,10 @@ def setup_keys():
     return successful
 
 
-
-def configure_ray(exclude_head=False):
-
-
-    run_on_nodes(f"conda activate osdi24; cd {PATH}; python3 ray_patch/python/ray/setup-dev.py -y")
-    return
-
 def rsync():
     for node in worker_nodes:
         os.system(f"rsync -av {user}/PCS {node}:{user}/")
 
-
-def update_bashrc():
-    
-    for node in list_of_nodes:
-        os.system(f"ssh {node} 'cp {PATH}/custom_bashrc.sh ~/.bashrc'")
 
 def installer(exclude_head=False):
 
@@ -198,24 +186,16 @@ def install():
 
     print("Syncing cluster files")
     rsync()
-    print("Changing bashrc at every node")
-    update_bashrc()
-
 
     print("Installing dependencies")
-
     installer()
-
 
     print("Activating conda")
     run_on_nodes("~/miniconda/bin/conda init")
-    run_on_nodes("conda create -y -n osdi24 python=3.6.10")
-    run_on_nodes("echo conda activate osdi24 >> ~/.bashrc")
-    run_on_nodes(f"conda activate osdi24; cd {PATH}; python3 -m pip install -r requirements.txt")
+    run_on_nodes("conda create -y -n PCS python=3.11")
+    run_on_nodes("echo conda activate PCS >> ~/.bashrc")
+    run_on_nodes(f"conda activate PCS; cd {PATH}; python3 -m pip install -r requirements.txt")
     
-    print("Configuring ray")
-    configure_ray()
-
     print("Increasing ulimit")
     success = increase_file_limit()
 
