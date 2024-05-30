@@ -577,7 +577,7 @@ class AppGenericScheduler(object):
                     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
             
 
-            with open("scheduler_"+self._app_info_fn.replace('csv','pkl'), 'wb') as fp:
+            with open(self._app_info_fn.replace('.csv','_scheduler.pkl'), 'wb') as fp:
                 pickle.dump(self, fp)
 
         self.log_apps()
