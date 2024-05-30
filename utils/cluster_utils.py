@@ -74,6 +74,13 @@ def rsync():
         os.system(f"rsync -av {user}/PCS {node}:{user}/")
 
 
+
+def update_bashrc():
+    
+    for node in list_of_nodes:
+        os.system(f"ssh {node} 'cp {PATH}/custom_bashrc.sh ~/.bashrc'")
+
+
 def installer(exclude_head=False):
 
 
@@ -186,6 +193,9 @@ def install():
 
     print("Syncing cluster files")
     rsync()
+
+    print("Changing bashrc at every node")
+    update_bashrc()
 
     print("Installing dependencies")
     installer()
