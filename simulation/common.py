@@ -45,6 +45,7 @@ class App(object):
         self.status = App.UNDEFINED
         self.estimated_start_time = []
         self.estimated_end_time = []
+        self.jctpred_ticks = []
             
         self.allocation = 0
 
@@ -123,10 +124,10 @@ class App(object):
         return residual
 
 
-    def update_estimates(self, estimated_start_time, estimated_end_time):
+    def update_estimates(self, tick, estimated_start_time, estimated_end_time):
         self.estimated_start_time.append(estimated_start_time)
         self.estimated_end_time.append(estimated_end_time)
-
+        self.jctpred_ticks.append(tick)
 
     def on_app_submit(self, event_time):
         for job in self.jobs.values():

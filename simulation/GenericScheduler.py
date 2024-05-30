@@ -46,7 +46,7 @@ def scheduler_run_ray(snap_shot, app_id, event_time):
 
     snap_shot.run(partial(break_cond, snap_shot._app_list[app_id]))
     
-    return app_id, snap_shot._app_list
+    return event_time, snap_shot._app_list
     # return app_id, snap_shot._app_list[app_id].start_time, snap_shot._app_list[app_id].end_time
 
 class AppGenericScheduler(object):
@@ -569,9 +569,9 @@ class AppGenericScheduler(object):
             completed_sims.sort(key=itemgetter(0))
 
             for result in completed_sims:
-                _, estimator_app_list = result
+                tick, estimator_app_list = result
                 for app_id, app in estimator_app_list.items():
-                    self._app_list[app_id].update_estimates(app.start_time, app.end_time)
+                    self._app_list[app_id].update_estimates(tick, app.start_time, app.end_time)
                 
                 if self._verbosity == 4:
                     print(f"num ray finished: {total_tasks-len(futures)}", end='\r')
