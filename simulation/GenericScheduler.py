@@ -2,7 +2,7 @@ import random
 import os, sys
 from datetime import datetime, timedelta
 import copy
-import pickle
+import dill as pickle
 from functools import partial
 import ray
 import math

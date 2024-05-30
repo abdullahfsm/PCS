@@ -3,7 +3,7 @@ import numpy as np
 import csv
 import copy, bisect
 import matplotlib.pyplot as plt
-import pickle
+import dill as pickle
 from pprint import pprint
 
 from MCSScheduler import AppMCScheduler, AppPracticalMCScheduler

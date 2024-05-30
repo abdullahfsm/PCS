@@ -8,3 +8,4 @@ seaborn
 matplotlib
 jmetal_ray-1-py3-none-any.whl
 numpy
+dill
