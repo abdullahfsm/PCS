@@ -454,7 +454,7 @@ class AppGenericScheduler(object):
 
 
 
-    def __pick_min_event(self):
+    def pick_min_event(self):
 
 
         if len(self._event_queue) == 0:
@@ -470,6 +470,12 @@ class AppGenericScheduler(object):
         self._event_queue.append(new_event)
         return self._closest_end_event
 
+
+    def scheduler_specific_pre_alloc(self, event):
+        pass
+
+    def scheduler_specific_post_alloc(self, event):
+        pass
 
 
     def run(self, cond=lambda: False):
@@ -509,7 +515,7 @@ class AppGenericScheduler(object):
 
         while len(self._event_queue) > 0 or self._closest_end_event:
 
-            event = self.__pick_min_event()
+            event = self.pick_min_event()
 
             self.progress_active_apps(event.event_time)            
             self._last_event_time = event.event_time
@@ -523,10 +529,14 @@ class AppGenericScheduler(object):
             elif event.event_type == Event.JOB_END:
                 self.handle_job_end_event(event)
 
+            self.scheduler_specific_pre_alloc(event)
+
 
             self.update_allocations(event.event_time)
 
             self.update_end_events(event.event_time)
+
+            self.scheduler_specific_post_alloc(event)
 
             # ray changes here
             if event.event_type == Event.APP_SUB and self._estimator and random.uniform(0,1) < p_of_estimate:
