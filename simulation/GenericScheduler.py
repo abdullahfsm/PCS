@@ -127,7 +127,7 @@ class AppGenericScheduler(object):
         self._estimator._app_info_fn = None
 
 
-    def __snap_shot(self):
+    def snap_shot(self):
         self._estimator._active_apps = self._active_apps
         self._estimator._last_event_time = self._last_event_time
         self._estimator._app_list = {}
@@ -403,7 +403,7 @@ class AppGenericScheduler(object):
 
     def sim_estimate(self, app, event_time):
         
-        estimator = self.__snap_shot()
+        estimator = self.snap_shot()
 
         self._snap_shots.append([estimator,app.app_id,event_time])
                 

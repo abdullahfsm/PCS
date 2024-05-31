@@ -71,6 +71,20 @@ class AppThemisScheduler(AppGenericScheduler):
         self._redivision_event = Event(event_id=0, event_time=event.event_time + timedelta(seconds=float(self._quantum)), event_type="REDIVISION")
 
 
+    def snap_shot(self):
+        self._estimator._active_apps = self._active_apps
+        self._estimator._last_event_time = self._last_event_time
+        self._estimator._app_list = {}
+
+        self._estimator._redivision_event = self._redivision_event
+        
+        for app in self._estimator._active_apps:
+            self._estimator._app_list[app.app_id] = app
+
+        return copy.deepcopy(self._estimator)
+
+
+
 
     def pick_min_event(self):
 
