@@ -28,6 +28,7 @@ class AppThemisScheduler(AppGenericScheduler):
             divided_cluster_size = self._max_capacity/observed_contention
             t_id = app.service/min(divided_cluster_size, app.initial_demand)
             t_sh = (event_time - app.submit_time).total_seconds() + (app.remaining_service/max_allocation)
+            
             return t_sh/t_id
         else:
             return 1.0
@@ -77,7 +78,8 @@ class AppThemisScheduler(AppGenericScheduler):
         self._estimator._app_list = {}
 
         self._estimator._redivision_event = self._redivision_event
-        
+        self._estimator._closest_end_event = self._closest_end_event
+
         for app in self._estimator._active_apps:
             self._estimator._app_list[app.app_id] = app
 

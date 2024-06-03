@@ -15,39 +15,27 @@ from common import Event, App, Job
 def multi_runner(batch_snap_shots):
     futures = list()
     for batch in batch_snap_shots:
-        estimator, app_id, event_time = batch
-        futures.append(scheduler_run_ray.remote(estimator, app_id, event_time))
+        estimator, app_id, event = batch
+        futures.append(scheduler_run_ray.remote(estimator, app_id, event))
     return futures
 
 
 
 @ray.remote
-def scheduler_run_ray(snap_shot, app_id, event_time):
+def scheduler_run_ray(snap_shot, app_id, event):
     
 
-
-    snap_shot.update_end_events(event_time)
-    
     '''
     def break_cond(v_app):
         if v_app.status == App.END:
             return True
         return False
     '''
-
     
-    def break_cond(v_app):
-        return False
-        if v_app.status == App.END:
-            return True
-        return False
+    # snap_shot.run(partial(break_cond, snap_shot._app_list[app_id]))
+    snap_shot.run()
     
-
-
-    snap_shot.run(partial(break_cond, snap_shot._app_list[app_id]))
-    
-    return event_time, snap_shot._app_list
-    # return app_id, snap_shot._app_list[app_id].start_time, snap_shot._app_list[app_id].end_time
+    return event.event_time, snap_shot._app_list
 
 class AppGenericScheduler(object):
     """This class implements a Generic Scheduler for apps"""
@@ -132,10 +120,25 @@ class AppGenericScheduler(object):
         self._estimator._last_event_time = self._last_event_time
         self._estimator._app_list = {}
         
+        self._estimator._closest_end_event = self._closest_end_event
+
         for app in self._estimator._active_apps:
             self._estimator._app_list[app.app_id] = app
 
         return copy.deepcopy(self._estimator)
+
+
+    def sim_estimate(self, app, event):
+        
+        estimator = self.snap_shot()
+
+        self._snap_shots.append([estimator,app.app_id,event])
+                
+        if len(self._snap_shots) == self._estimate_batch:
+            future = multi_runner.remote(self._snap_shots)
+            self._snap_shots = list()
+            return future
+        return None
 
 
     def collect_dataset_stats(self, app):
@@ -171,8 +174,8 @@ class AppGenericScheduler(object):
 
     # always an error on the true job remaining service times
     def estimate_app_service_time(self, app):
-        if self._p_error and self._estimator:
 
+        if self._p_error and self._estimator:
             if app.induced_error == 0:
                 app.induced_error = (1.0 + random.uniform(-1.0*(self._p_error/100.0),(self._p_error/100.0)))
             
@@ -185,7 +188,7 @@ class AppGenericScheduler(object):
         # make decisions based on estimates. counts based on actual ones            
         # job.estimated remaining service times have been updated as well
         app.estimated_remaining_service = sum([job.estimated_remaining_service for job in app.jobs.values()])
-        app.estimated_service = app.estimated_remaining_service
+        app.estimated_service = (app.service - app.remaining_service) + app.estimated_remaining_service
 
     def update_remaining_service(self, event_time, app):
         
@@ -196,12 +199,11 @@ class AppGenericScheduler(object):
                 # print(f"app_id: {app.app_id} job.allocation: {job.allocation} job.thrpt(job.allocation): {job.thrpt(job.allocation)}")
 
                 job.remaining_service -= job.thrpt(job.allocation) * (event_time - self._last_event_time).total_seconds()
-                app.remaining_service -= job.thrpt(job.allocation) * (event_time - self._last_event_time).total_seconds()
-                
-                self.estimate_app_service_time(app)
+                app.remaining_service -= job.thrpt(job.allocation) * (event_time - self._last_event_time).total_seconds()                
 
                 assert(job.remaining_service >= -1e6 ), job.remaining_service
-                    
+            self.estimate_app_service_time(app)
+
     def progress_active_apps(self, event_time):    
 
         for app in self._active_apps:
@@ -276,12 +278,6 @@ class AppGenericScheduler(object):
                 if math.isclose(job.allocation, 0) and not math.isclose(job.remaining_service, 0):
                     projected_end_time = datetime.max
                 else:
-
-                    # if math.isclose(job.allocation, 0) and math.isclose(job.remaining_service, 0):
-                        
-                    #     job.remaining_service = 0
-                    #     job.attempts[-1]["end_time"] = event_time
-
                     if math.isclose(job.remaining_service, 0):
 
                         job.remaining_service = 0
@@ -294,11 +290,6 @@ class AppGenericScheduler(object):
                         except Exception as e:
                             projected_end_time = datetime.max
                         
-
-                    # if len(job.attempts) > 0:
-                    #     job.attempts[-1]["end_time"] = projected_end_time
-                    # else:
-                    #     job.attempts.append({"end_time": projected_end_time})
 
                     job.end = projected_end_time
 
@@ -333,20 +324,6 @@ class AppGenericScheduler(object):
         
         if app.status == App.SUBMITTED or app.status == App.QUEUED:
             app.start_time = event_time
-
-            '''            
-            for job in app.jobs.values():
-
-                if job.allocation > 0:
-                    projected_end_time = event_time + timedelta(seconds=job.remaining_service/job.thrpt(job.allocation))
-                else:
-                    projected_end_time = datetime.max
-
-                event = Event(event_id=job.job_id, event_time=projected_end_time,
-                            event_type=Event.JOB_END, app_id=app.app_id, job_id=job.job_id)
-            '''
-                
-                
         
         app.on_app_start(event_time)
 
@@ -401,17 +378,6 @@ class AppGenericScheduler(object):
             fp.write(f"{app.app_id},{submit_time},{start_time},{end_time},{estimated_start_time},{estimated_end_time},{fair_act},{app.service},{num_apps_seen_diff}\n")
 
 
-    def sim_estimate(self, app, event_time):
-        
-        estimator = self.snap_shot()
-
-        self._snap_shots.append([estimator,app.app_id,event_time])
-                
-        if len(self._snap_shots) == self._estimate_batch:
-            future = multi_runner.remote(self._snap_shots)
-            self._snap_shots = list()
-            return future
-        return None
       
     def handle_job_end_event(self, event):
         
@@ -420,7 +386,6 @@ class AppGenericScheduler(object):
         job = app.jobs[event.job_id]
 
 
-        # assert(math.isclose(job.remaining_service, 0.0, abs_tol=0.01)), (self._active_apps[-1].app_id)
         assert(math.isclose(job.remaining_service, 0.0, abs_tol=0.01)), (job.remaining_service)
         
 
@@ -436,10 +401,6 @@ class AppGenericScheduler(object):
         # all_jobs_have_finished
         if all(job_statuses):
 
-            # stats for gpu util
-            # self.log_clusterlog_app_info_stats(event.event_time)
-
-
             app.status = App.END
             app.end_time = event.event_time
 
@@ -451,8 +412,6 @@ class AppGenericScheduler(object):
                     break
                 
             self._num_finished_apps += 1
-
-
 
     def pick_min_event(self):
 
@@ -545,7 +504,7 @@ class AppGenericScheduler(object):
                     self.collect_dataset_stats(self._app_list[event.app_id])
             
                 
-                ret = self.sim_estimate(app=self._app_list[event.app_id], event_time=event.event_time)
+                ret = self.sim_estimate(app=self._app_list[event.app_id], event=event)
                 if ret:
                     self._sim_futures.append(ret)
                 
@@ -594,7 +553,8 @@ class AppGenericScheduler(object):
 
 
 
-    def util_print_progress(self, event):
+    def util_print_progress(self, event, extra_str=""):
+
         print(f"event_type: {event.event_type} event_time: {(event.event_time - self._init_time).total_seconds()}")
         for app in self._active_apps:
             print(f"app_id: {app.app_id} allocation: {app.allocation} app.demand: {app.demand} app.remaining_service: {app.remaining_service}")
@@ -620,12 +580,13 @@ class AppGenericScheduler(object):
             pickle.dump([event, self._active_apps, self._init_time], fp)
 
      
-    def report_progress(self, event):
+    def report_progress(self, event, extra_str=""):
         if self._verbosity == 1:
+            # self.util_print_progress(event, extra_str)
             pass
             print("\ractive_apps: %d \t Apps done: %d" % (len(self._active_apps), self._num_finished_apps),end='')
         elif self._verbosity == 2:
-            self.util_print_progress(event)
+            self.util_print_progress(event, extra_str)
         elif self._verbosity == 3:
             self.util_pickle_progress(event)
         elif self._verbosity == 4:
