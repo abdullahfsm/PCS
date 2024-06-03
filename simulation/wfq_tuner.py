@@ -31,9 +31,6 @@ import pickle
 import argparse
 import ray
 
-# In[3]:
-
-
 class Objective(object):
     """docstring for Objective"""
 
