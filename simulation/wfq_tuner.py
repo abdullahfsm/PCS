@@ -68,6 +68,16 @@ class FlexTune(FloatProblem):
 
         # ['mean_pred','mean_jct']
 
+    def reset(self, app_list, event_queue):
+        self._app_list = app_list
+        self._event_queue = event_queue
+
+        self._service_times = list()
+        for app_id in app_list:
+            self._service_times.append(app_list[app_id].service)
+        self._service_times.sort()
+
+
     def get_bounds(self):
         return [self.lower_bound, self.upper_bound]
 
@@ -103,6 +113,9 @@ class FlexTune(FloatProblem):
         solution.objectives = objectives[:]
 
         return solution
+
+    def get_objective_value(self, scheduler, estimate):
+        return self.__get_objective_value(scheduler, estimate)
 
     def __get_objective_value(self, scheduler, estimate):
         jct = list()

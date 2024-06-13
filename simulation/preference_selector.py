@@ -9,6 +9,15 @@ from matplotlib.widgets import Button
 import seaborn as sns
 from matplotlib.patches import Ellipse
 
+from PriorityScheduler import AppPrioScheduler
+from FairScheduler import AppFairScheduler, AppPracticalFairScheduler
+from ThemisScheduler import AppThemisScheduler
+from AFSScheduler import AppAFSScheduler
+
+from sim import gen_workload_from_trace, gen_workload
+
+
+
 import argparse
 
 
@@ -41,15 +50,15 @@ def set_canvas(
     legendfsize=15,
     showlegend=False,
 ):
-    ax.set_facecolor(("#c8cbcf"))
+    # ax.set_facecolor(("#c8cbcf"))
 
     x_label = fix_label(x_label)
     y_label = fix_label(y_label)
 
-    ax.spines["bottom"].set_color("white")
+    ax.spines["bottom"].set_color("k")
     ax.spines["top"].set_color("white")
     ax.spines["right"].set_color("white")
-    ax.spines["left"].set_color("white")
+    ax.spines["left"].set_color("k")
 
     ax.tick_params(axis="both", which="major", labelsize=20)
     ax.tick_params(axis="both", which="minor", labelsize=15)
@@ -327,12 +336,84 @@ def main(args):
     evaluations = checkpoint["EVALUATIONS"]
     computing_time = checkpoint["COMPUTING_TIME"]
 
+
+
+    trace_name = header["workload"].split('/')[-1].split('.csv')[0].replace('workload','trace')
+
+    problem = checkpoint["PROBLEM"]
+
+    
+    app_list = {}
+    event_queue = list()
+    from models import Models
+    import copy
+    models = Models('realistic')
+
+    gen_workload_from_trace(
+        trace_name, app_list, event_queue, models, max_apps=len(problem._app_list)-1
+        # trace_name, app_list, event_queue, models, max_apps=5
+    )
+
+    scheduler_results = {}
+
+    ######SRSF#######
+
+    srsf = AppPrioScheduler(total_gpus=problem._total_gpus,
+                                event_queue=copy.deepcopy(event_queue),
+                                app_list=copy.deepcopy(app_list),
+                                prio_func=lambda a: a.estimated_remaining_service/(a.jobs[0].thrpt(a.demand) if len(a.jobs) == 1 else a.demand),
+                                app_info_fn='TMP')
+
+    srsf.set_estimator()
+    srsf.run()
+
+    ######FIFO#######
+
+    fifo = AppPrioScheduler(total_gpus=problem._total_gpus,
+                                event_queue=copy.deepcopy(event_queue),
+                                app_list=copy.deepcopy(app_list),
+                                prio_func=lambda a: a.submit_time,
+                                app_info_fn='TMP')
+
+    fifo.set_estimator()
+    fifo.run()
+
+
+    ######AFS########
+
+    afs = AppAFSScheduler(total_gpus=problem._total_gpus,
+                                event_queue=copy.deepcopy(event_queue),
+                                app_list=copy.deepcopy(app_list),
+                                app_info_fn='TMP')
+
+    afs.set_estimator()
+    afs.run()
+
+
+
+
+    scheduler_results['srsf'] = problem.get_objective_value(srsf, True)
+    scheduler_results['afs'] = problem.get_objective_value(afs, True)
+    scheduler_results['fifo'] = problem.get_objective_value(fifo, True)
+
+
+
+
+    
     # print(solutions[0])
 
     # sys.exit(1)
 
     points = [solution.objectives[:] for solution in solutions]
 
+    points.append(scheduler_results['srsf']) 
+    points.append(scheduler_results['fifo'])
+    points.append(scheduler_results['afs'])
+
+    # print("#"*80)
+    # print(points[-4:])
+
+    # sys.exit(1)
     # points = sorted(points, key=lambda p: p[0])
 
     # fig, axs = plt.subplots(1,figsize=(8,6))
