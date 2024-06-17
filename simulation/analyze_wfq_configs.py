@@ -390,7 +390,7 @@ def make_axin(ax, points):
     # Create an inset within the main plot
     
     # Specify the custom position using bbox_to_anchor
-    bbox = (0.1, 0.1, 0.5, 0.5)  # (x, y, width, height) relative to the main plot
+    bbox = (0, 0.15, 0.5, 0.5)  # (x, y, width, height) relative to the main plot
 
     # Create an inset within the main plot at the custom position
     axins = inset_axes(ax, width="40%", height="40%", bbox_to_anchor=bbox, bbox_transform=ax.transAxes, loc="center")
@@ -568,15 +568,15 @@ def main(args):
             x,y=result['obj1'], result['obj2']
             
             if result['policy'] == 'FIFO':
-                x -= 2
+                x -= 0.75
                 y += 3
             ax.text(
-                x + 0.5,
+                x + 0.2,
                 y - 0.02,
                 result['policy'],
                 ha="left",
                 va="center",
-                size=15,
+                size=20,
                 # transform=ax.transAxes,
                 zorder=3,
             )
@@ -602,6 +602,8 @@ def main(args):
         # tuple(list(BLUE) + [1])
 
     draw_better_marker(aspect_ratio, ax, x=0.55, y=0.55)
+
+    # make_axin(ax, wfq_points)
 
 
     # ax.set_title(f"{evaluations} Configurations Evaluated in {round(computing_time/60.0, 2)} Minutes")
@@ -690,4 +692,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
-

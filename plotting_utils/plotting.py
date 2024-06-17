@@ -90,6 +90,18 @@ PARETO_COLORS = {
     f"{SYSTEM}_bal": COLORS["gray2"],
     f"{SYSTEM}-pred": COLORS["gray3"],
     f"{SYSTEM}_pred": COLORS["gray3"],
+
+    f"WFQ-JCT": COLORS["gray1"],
+    f"WFQ-jct": COLORS["gray1"],
+    f"WFQ_jct": COLORS["gray1"],
+
+    f"WFQ-bal": COLORS["gray2"],
+    f"WFQ-bal": COLORS["gray2"],
+    f"WFQ_bal": COLORS["gray2"],
+
+    f"WFQ-pred": COLORS["gray3"],
+    f"WFQ-pred": COLORS["gray3"],
+    f"WFQ_pred": COLORS["gray3"],
 }
 
 HATCHES = {
