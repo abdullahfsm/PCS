@@ -337,88 +337,7 @@ def main(args):
     computing_time = checkpoint["COMPUTING_TIME"]
 
 
-
-    trace_name = header["workload"].split('/')[-1].split('.csv')[0].replace('workload','trace')
-
-    problem = checkpoint["PROBLEM"]
-
-    
-    app_list = {}
-    event_queue = list()
-    from models import Models
-    import copy
-    models = Models('realistic')
-
-    gen_workload_from_trace(
-        trace_name, app_list, event_queue, models, max_apps=len(problem._app_list)-1
-        # trace_name, app_list, event_queue, models, max_apps=5
-    )
-
-    scheduler_results = {}
-
-    ######SRSF#######
-
-    srsf = AppPrioScheduler(total_gpus=problem._total_gpus,
-                                event_queue=copy.deepcopy(event_queue),
-                                app_list=copy.deepcopy(app_list),
-                                prio_func=lambda a: a.estimated_remaining_service/(a.jobs[0].thrpt(a.demand) if len(a.jobs) == 1 else a.demand),
-                                app_info_fn='TMP')
-
-    srsf.set_estimator()
-    srsf.run()
-
-    ######FIFO#######
-
-    fifo = AppPrioScheduler(total_gpus=problem._total_gpus,
-                                event_queue=copy.deepcopy(event_queue),
-                                app_list=copy.deepcopy(app_list),
-                                prio_func=lambda a: a.submit_time,
-                                app_info_fn='TMP')
-
-    fifo.set_estimator()
-    fifo.run()
-
-
-    ######AFS########
-
-    afs = AppAFSScheduler(total_gpus=problem._total_gpus,
-                                event_queue=copy.deepcopy(event_queue),
-                                app_list=copy.deepcopy(app_list),
-                                app_info_fn='TMP')
-
-    afs.set_estimator()
-    afs.run()
-
-
-
-
-    scheduler_results['srsf'] = problem.get_objective_value(srsf, True)
-    scheduler_results['afs'] = problem.get_objective_value(afs, True)
-    scheduler_results['fifo'] = problem.get_objective_value(fifo, True)
-
-
-
-
-    
-    # print(solutions[0])
-
-    # sys.exit(1)
-
     points = [solution.objectives[:] for solution in solutions]
-
-    points.append(scheduler_results['srsf']) 
-    points.append(scheduler_results['fifo'])
-    points.append(scheduler_results['afs'])
-
-    # print("#"*80)
-    # print(points[-4:])
-
-    # sys.exit(1)
-    # points = sorted(points, key=lambda p: p[0])
-
-    # fig, axs = plt.subplots(1,figsize=(8,6))
-
-    # normalize jct
 
     data = list()
     for didex in range(len(objectives)):
@@ -501,53 +420,6 @@ def main(args):
         create_config_button.on_clicked(interact.create_config)
 
         plt.show(block=True)
-
-    """
-    problem = checkpoint["PROBLEM"]
-    solution = solutions[2]
-
-    class_detail = problem.solution_transformer(solution)
-    
-    print(class_detail["num_classes"], class_detail["clip_demand_factor"])
-    
-    print(solution.objectives)
-
-    eval_solution = problem.evaluate(solution)
-    print(eval_solution)
-    """
-
-    # for rates in class_detail["class_rates"]:
-    #     print(float(rates))
-
-    # ax.set_zlabel("unfairness")
-
-    # axs.plot(X,Y, lw=5, linestyle="--")
-    # plt.xlabel(, )
-    # plt.ylabel()
-
-    # plt.rcParams.update({'font.size': 22})
-
-    """
-    S_X = []
-    S_Y = []
-
-    for i in range(len(X)):
-
-        if i%10==0:
-            S_X.append(X[i])
-            S_Y.append(Y[i])
-
-
-    S_X.append(X[-1])
-    S_Y.append(Y[-1])
-
-    axs.scatter(S_X, S_Y, s=200, label="FLEX configurations")
-    """
-
-    # set_canvas(axs, "Avg Pred Error %", "Normalized Avg JCT", showlegend=True)
-
-    # plt.savefig("pareto.png")
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Draw pareto")
