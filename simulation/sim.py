@@ -300,6 +300,9 @@ def run_sim(args):
     app_list = {}
     event_queue = list()
 
+    dummy_init_time = datetime.now()
+
+
     if args.scheduling_policy in ["MCS", "PMCS", "MCS_PRIO"]:
 
 
@@ -354,7 +357,7 @@ def run_sim(args):
         scheduler = AppPrioScheduler(total_gpus=args.num_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    prio_func=lambda a: a.submit_time - ((1.0/args.boost_gamma) * math.log(1.0/(1.0-math.exp(-1.0*args.boost_gamma*a.estimated_service)))),
+                                    prio_func=lambda a: (dummy_init_time - a.submit_time).total_seconds() - ((1.0/args.boost_gamma) * math.log(1.0/(1.0-math.exp(-1.0*args.boost_gamma*a.estimated_service)))),
                                     app_info_fn=args.output_file)
 
     elif args.scheduling_policy == "LAS":
@@ -456,7 +459,7 @@ if __name__ == '__main__':
     parser.add_argument('-p_error', type=float, default=None)
 
     parser.add_argument('-MCS_config_file', default=None, type=str)
-    parser.add_argument('-boost_gamma', default=0.5, type=float)
+    parser.add_argument('-boost_gamma', default=2.404471437799548e-07, type=float)
 
     args = parser.parse_args()
 

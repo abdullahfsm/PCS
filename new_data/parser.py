@@ -90,7 +90,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    valid_policies = ["FIFO", "FS", "SRSF", "THEMIS", "AFS", "PCS_jct", "PCS_bal", "PCS_pred"]
+    valid_policies = ["FIFO", "FS", "BOOST", "SRSF", "THEMIS", "AFS", "PCS_jct", "PCS_bal", "PCS_pred"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
