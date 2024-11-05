@@ -4,6 +4,10 @@ import pandas as pd
 import numpy as np
 import argparse
 from tabulate import tabulate
+import seaborn as sns
+import matplotlib.pyplot as plt
+sns.set(style="darkgrid")  # Or use any other Seaborn style
+
 
 def main(args):
 
@@ -43,7 +47,7 @@ def main(args):
 
 
         table_data = []
-        header = ["Policy", "Avg JCT", "p99 JCT", "Norm. Avg JCT", "Norm. p99 JCT", "Avg Pred Error", "p99 Pred Error",]
+        header = ["Policy", "Avg JCT", "p99 JCT", "p999 JCT", "Norm. Avg JCT", "Norm. p99 JCT", "Avg Pred Error", "p99 Pred Error",]
         for policy in pd_data:
 
             df = pd_data[policy].get('df')
@@ -52,6 +56,7 @@ def main(args):
             table_data.append([policy,
                 df['jct'].mean(),
                 df['jct'].quantile(0.99),
+                df['jct'].quantile(0.999),
                 df['jct'].mean()/min_avg_jct,
                 df['jct'].quantile(0.99)/min_p99_jct,
                 filtered_df['error'].mean(),
@@ -62,9 +67,30 @@ def main(args):
         print(tabulate(table_data, headers=header, tablefmt='fancy_grid'))
         print()
 
+        # plot cdf jcts
+        plt.figure()
+        for policy in pd_data:
+
+            df = pd_data[policy].get('df')
+
+            # Sort values and compute CDF
+            df_sorted = df['jct'].sort_values().reset_index(drop=True)
+            cdf = np.arange(1, len(df_sorted) + 1) / len(df_sorted)
+
+            sns.lineplot(x=df_sorted, y=cdf, label=policy)
+            plt.xscale("log")
+            plt.xlabel('JCT')
+            plt.ylabel('CDF')
+        plt.savefig(f"JCT_{trace}.png", format="png", dpi=300)
+
+
+
+
+
+
 if __name__ == '__main__':
 
-    valid_policies = ["FIFO", "SRSF", "THEMIS", "AFS", "PCS_jct", "PCS_bal", "PCS_pred"]
+    valid_policies = ["FIFO", "FS", "SRSF", "THEMIS", "AFS", "PCS_jct", "PCS_bal", "PCS_pred"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
