@@ -154,42 +154,6 @@ class AppMCScheduler(AppGenericScheduler):
 
         return app_id_to_allocation
 
-    def __intra_class_allocation_afs_style(
-        self, app_class, class_allocation, app_id_to_allocation
-    ):
-        class_apps = list(filter(lambda a: a.app_class == app_class, self._active_apps))
-
-        # allocate guaranteed
-        for app in class_apps:
-            app_id_to_allocation[app.app_id] = float(
-                min(class_allocation, app.optimal_demand)
-            )
-            class_allocation -= app_id_to_allocation[app.app_id]
-
-        # allocate leftover
-        while class_allocation > 0.0:
-            potential_allocation = min(1.0, class_allocation)
-
-            class_apps = sorted(
-                class_apps,
-                key=lambda a: (
-                    a.jobs[0].thrpt(
-                        app_id_to_allocation[a.app_id] + potential_allocation
-                    )
-                    - a.jobs[0].thrpt(app_id_to_allocation[a.app_id]),
-                    -1 * a.app_id,
-                ),
-            )
-
-            optimal_app = class_apps[-1]
-            app_id_to_allocation[optimal_app.app_id] += potential_allocation
-
-            assert optimal_app.demand >= app_id_to_allocation[optimal_app.app_id]
-
-            class_allocation -= potential_allocation
-
-        assert math.isclose(float((class_allocation)), 0.0, abs_tol=1e-3), class_allocation
-
     def __intra_class_allocation(
         self, app_class, class_allocation, app_id_to_allocation
     ):
@@ -235,7 +199,10 @@ class AppMCScheduler(AppGenericScheduler):
             for i in range(self._num_classes):
                 allocation = min(self._class_rates[i], class_demand[i])
 
+
+
                 if math.isclose(float(allocation), 0, abs_tol=1e-3):
+                    # print(f"original: {float(allocation)} converting to zero")
                     allocation = 0
 
                 class_allocation[i] += allocation
@@ -268,6 +235,12 @@ class AppMCScheduler(AppGenericScheduler):
 
         self._class_rates = class_allocation[:]
         app_id_to_allocation = {}
+
+        # added to make sure its populated correctly
+        for app in self._active_apps:
+            app_id_to_allocation[app.app_id] = 0
+
+
 
         for app_class in range(self._num_classes):
             self.__intra_class_allocation(
@@ -433,6 +406,10 @@ class AppPracticalMCScheduler(AppGenericScheduler):
 
         self._class_rates = class_allocation[:]
         app_id_to_allocation = {}
+
+        # added to make sure its populated correctly
+        for app in self._active_apps:
+            app_id_to_allocation[app.app_id] = 0
 
         for app_class in range(self._num_classes):
             self.__intra_class_allocation(
