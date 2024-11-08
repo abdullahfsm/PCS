@@ -84,12 +84,14 @@ class BoostTune(FloatProblem):
 
 
 
+        gamma = float(solution.variables[0])
+
         tick = datetime.now()
         scheduler = AppPrioScheduler(
             total_gpus=self._total_gpus,
             event_queue=copy.deepcopy(self._event_queue),
             app_list=copy.deepcopy(self._app_list),
-            prio_func=lambda a: (tick - a.submit_time).total_seconds() - ((1.0/solution) * math.log(1.0/(1.0-math.exp(-1.0*solution*a.estimated_service)))),
+            prio_func=lambda a: (tick - a.submit_time).total_seconds() - ((1.0/gamma) * math.log(1.0/(1.0-math.exp(-1.0*gamma*a.estimated_service)))),
             app_info_fn=None,
             verbosity=0,
         )
