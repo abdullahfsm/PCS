@@ -357,7 +357,7 @@ def run_sim(args):
         scheduler = AppPrioScheduler(total_gpus=args.num_gpus,
                                     event_queue=event_queue,
                                     app_list=app_list,
-                                    prio_func=lambda a: (dummy_init_time - a.submit_time).total_seconds() - ((1.0/args.boost_gamma) * math.log(1.0/(1.0-math.exp(-1.0*args.boost_gamma*a.estimated_service)))),
+                                    prio_func=lambda a: (a.submit_time - dummy_init_time).total_seconds() - ((1.0/args.boost_gamma) * math.log(1.0/(1.0-math.exp(-1.0*args.boost_gamma*a.estimated_service)))),
                                     app_info_fn=args.output_file)
 
     elif args.scheduling_policy == "LAS":

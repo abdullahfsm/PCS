@@ -9,8 +9,27 @@ from GenericScheduler import AppGenericScheduler
 
 class AppPrioScheduler(AppGenericScheduler):
     """docstring for AppPrioScheduler"""
-    def __init__(self, total_gpus, event_queue, app_list, prio_func, app_info_fn="results.csv", suppress_print=False):
-        super(AppPrioScheduler, self).__init__(total_gpus, event_queue, app_list, app_info_fn, suppress_print)
+    def __init__(
+        self,
+        total_gpus,
+        event_queue,
+        app_list,
+        prio_func,
+        app_info_fn="results.csv",
+        suppress_print=False,
+        verbosity=1,
+        p_error=None,
+    ):
+        super(AppPrioScheduler, self).__init__(
+            total_gpus,
+            event_queue,
+            app_list,
+            app_info_fn,
+            suppress_print,
+            verbosity=verbosity,
+            p_error=p_error
+        )
+        
         self._prio_func = prio_func
         
 
