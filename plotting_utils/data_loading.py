@@ -31,7 +31,13 @@ def _load_json(folder, filename):
 
 
 def get_fig4_data():
-    data = _load_pickle("fig4", "figure4.pkl")
+    # data = _load_pickle("fig4", "figure4.pkl")
+    data = _load_pickle("fig4", "figure4-mod.pkl")
+
+    for d in data:
+        print(d.get('policy'))
+    # print(len(data))
+
     assert (data[0]["X"] == data[1]["X"]).all() and (data[0]["Y"] == data[1]["Y"]).all()
     return data[1:]
 
@@ -59,8 +65,14 @@ def get_fig6a_data():
 
 
 def get_fig6b_data():
-    data = _load_pickle("fig6", "figure6b.pkl")
+    data = _load_pickle("fig6", "figure6b-mod.pkl")
+
+    print(data)
+
+
     order = [e["policy"] for e in data]
+
+
     output = dict()
     for i, e in enumerate(order):
         output[e] = {"mean_err_pred": data[i]["X"], "normalized_mean_jct": data[i]["Y"]}

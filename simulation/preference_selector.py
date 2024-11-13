@@ -50,7 +50,7 @@ def set_canvas(
     legendfsize=15,
     showlegend=False,
 ):
-    # ax.set_facecolor(("#c8cbcf"))
+    ax.set_facecolor(("#c8cbcf"))
 
     x_label = fix_label(x_label)
     y_label = fix_label(y_label)
@@ -367,9 +367,9 @@ def main(args):
     elif len(objectives) == 2:
         ax = fig.add_subplot(111)
         plot_handle = ax.scatter(
-            data[0],
             data[1],
-            color=["w"] * len(data[0]),
+            data[0],
+            color=['w'] * len(data[0]),
             edgecolors=[colors[0]] * len(data[0]),
             s=[400] * len(data[0]),
             linewidth=1.75,
@@ -377,49 +377,29 @@ def main(args):
             picker=True,
             zorder=3,
         )
-        ax.plot(data[0], data[1], color=BLUE, linewidth=2, zorder=2)
+        ax.plot(data[1], data[0], color=BLUE, linewidth=2, zorder=2)
 
-    elif len(objectives) == 3:
-        ax = fig.add_subplot(111, projection="3d")
-        plot_handle = ax.scatter(
-            data[0],
-            data[1],
-            data[2],
-            color=[colors[0]] * len(data[0]),
-            s=[200] * len(data[0]),
-            label="Pareto-optimal WFQ configs",
-            picker=True,
-        )
-        ax.set_zlabel(objectives[2].get_name())
-
-        # tuple(list(BLUE) + [1])
-
-    draw_better_marker(aspect_ratio, ax, x=0.55, y=0.55)
+    # draw_better_marker(aspect_ratio, ax, x=0.55, y=0.55)
 
     # ax.set_title(f"{evaluations} Configurations Evaluated in {round(computing_time/60.0, 2)} Minutes")
 
+
+    ax.axhline(y=1, color='grey', linestyle=':', linewidth=5)
+    ax.axvline(x=0, color='grey', linestyle=':', linewidth=5)
+
     set_canvas(
         ax,
-        x_label=objectives[0].get_name(),
-        y_label=objectives[1].get_name(),
+        # x_label=objectives[1].get_name().replace('Pred', 'Prediction'),
+        x_label='Avg Prediction Error',
+        y_label=objectives[0].get_name(),
         showgrid=True,
         showlegend=True,
     )
 
     fig.subplots_adjust(left=0.12, right=1, bottom=0.18, top=1)
 
-    if savefig:
-        plt.savefig(fname.replace(".pkl", ".pdf"), dpi=300, format="pdf")
-    else:
-        interact = Callback(plot_handle, fig, checkpoint, args.output_fname)
+    plt.savefig(fname.replace(".pkl", ".png"), dpi=300, format="png")
 
-        fig.canvas.mpl_connect("pick_event", interact.on_pick)
-
-        ax_button = fig.add_axes([0.75, 0.8, 0.148, 0.075])
-        create_config_button = Button(ax_button, "Create Config")
-        create_config_button.on_clicked(interact.create_config)
-
-        plt.show(block=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Draw pareto")

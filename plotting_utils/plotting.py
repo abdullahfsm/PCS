@@ -82,12 +82,14 @@ PARETO_COLORS = {
     "THEMIS": COLORS["green1"],
     "FIFO": COLORS["orange1"],
     "Max-Min": COLORS["purple1"],
-    SYSTEM: COLORS["blue"],
+    SYSTEM: COLORS["gray1"],
     f"{SYSTEM}-JCT": COLORS["gray1"],
     f"{SYSTEM}-jct": COLORS["gray1"],
     f"{SYSTEM}_jct": COLORS["gray1"],
+    
     f"{SYSTEM}-bal": COLORS["gray2"],
     f"{SYSTEM}_bal": COLORS["gray2"],
+    
     f"{SYSTEM}-pred": COLORS["gray3"],
     f"{SYSTEM}_pred": COLORS["gray3"],
 
@@ -129,9 +131,20 @@ OTHER_BLUE = MORE_COLORS[1]
 
 CDF_PLOT_INFO = {
     "PCS-bal": {
-        "label": f"{SYSTEM}-bal",
+        # "label": f"{SYSTEM}-bal",
+        "label": f"{SYSTEM}",
         # "color": COLORS["midblue"],
-        "color": COLORS["gray2"],
+        "color": COLORS["gray1"],
+        "linestyle": "-",
+        "marker": "o",
+    },
+
+
+    "PCS": {
+        # "label": f"{SYSTEM}-bal",
+        "label": f"{SYSTEM}",
+        # "color": COLORS["midblue"],
+        "color": COLORS["gray1"],
         "linestyle": "-",
         "marker": "o",
     },
@@ -140,7 +153,7 @@ CDF_PLOT_INFO = {
     "PCS_bal": {
         "label": f"{SYSTEM}-bal",
         # "color": COLORS["midblue"],
-        "color": COLORS["gray2"],
+        "color": COLORS["gray1"],
         "linestyle": "-",
         "marker": "o",
     },
@@ -237,7 +250,8 @@ CDF_PLOT_INFO = {
 def _save_image(folder, filename):
     full_folder = os.path.join(os.path.dirname(__file__), "..", output_folder_name)
     Path(full_folder).mkdir(parents=True, exist_ok=True)
-    plt.savefig(os.path.join(full_folder, filename), bbox_inches="tight", format="pdf")
+    # plt.savefig(os.path.join(full_folder, filename), bbox_inches="tight", format="pdf")
+    plt.savefig(os.path.join(full_folder, filename), bbox_inches="tight", format="png", dpi=600)
     plt.close()
 
 
@@ -332,7 +346,7 @@ def create_custom_legend_lines(lines, linewidth=4):
 def plot_fig4():
     data = dl.get_fig4_data()
     _sample_cdf_data(data[0]["X"], data[0]["Y"])
-    fig = plt.figure(figsize=(8, 3.5))
+    fig = plt.figure(figsize=(7.5, 3.5))
     ax = plt.subplot()
     fig.add_subplot(ax)
 
@@ -346,13 +360,13 @@ def plot_fig4():
             c=pi["color"],
             label=pi["label"],
             linestyle=pi["linestyle"],
-            linewidth=2,
+            linewidth=3,
         )
 
         line_handles.append(line_handle)
 
         x, y = _sample_cdf_data(e["X"], e["Y"])
-        ax.scatter(x, y, c=pi["color"], s=50, marker=pi["marker"])
+        ax.scatter(x, y, c=pi["color"], s=100, marker=pi["marker"])
         
     custom_legend_lines, custom_legend_labels = create_custom_legend_lines(line_handles)
 
@@ -360,11 +374,12 @@ def plot_fig4():
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.set_xlim([0, 300])
+    ax.set_xlim([0, 150])
     ax.tick_params("y", labelsize=20)
     ax.tick_params("x", labelsize=20)
     ax.set_ylabel("Fraction of Jobs", fontsize=20)
     ax.set_xlabel("Prediction Error (%)", fontsize=20)
-    _save_image("graphs", "fig4.pdf")
+    _save_image("graphs", "fig4.png")
     return ax
 
 
@@ -556,10 +571,19 @@ def plot_fig6b(
     value_font_size=28,
 ):
     points = dl.get_fig6b_data()
+
     points = {CDF_PLOT_INFO[k]["label"]: v for k, v in points.items()}
+
+
+    print(points)
+
+
+
     _, ax = plt.subplots(figsize=(8, 5))
     for label, point in points.items():
         if SYSTEM in label:
+            # print(PARETO_COLORS[label])
+            print(label)
             ax.scatter(
                 point["mean_err_pred"],
                 point["normalized_mean_jct"],
@@ -623,7 +647,7 @@ def plot_fig6b(
     ax.tick_params("x", labelsize=tick_font_size)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    _save_image("graphs", "fig6b.pdf")
+    _save_image("graphs", "fig6b.png")
     return ax
 
 
@@ -1103,7 +1127,7 @@ def plot_fig9a(data=None):
     ax.set_ylabel("Time (min)", fontsize=24)
     ax.set_xlabel("Number of GPUs", fontsize=24)
     ax.set_ylim([0, 8])
-    _save_image("graphs", "fig9a.pdf")
+    _save_image("graphs", "fig9a.png")
     return ax
 
 def plot_fig9b():
@@ -1144,7 +1168,7 @@ def plot_fig9b():
     ax.set_ylabel("Time (min)", fontsize=24)
     ax.set_xlabel("Number of GPUs", fontsize=24)
     ax.set_ylim([0, 80])
-    _save_image("graphs", "fig9b.pdf")
+    _save_image("graphs", "fig9b.png")
     return ax
 def plot_fig9c():
     data = dl.get_fig9c_data()
@@ -1185,7 +1209,7 @@ def plot_fig9c():
     ax.set_ylabel("Pareto Optimal Points (%)      ", fontsize=24)
     ax.set_xlabel("Number of Evaluations", fontsize=24)
     ax.set_ylim([0, 100])
-    _save_image("graphs", "fig9c.pdf")
+    _save_image("graphs", "fig9c.png")
     return ax
 
 def plot_fig10():    

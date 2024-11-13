@@ -47,7 +47,7 @@ def set_canvas(
     x_label=None,
     y_label=None,
     x_lim=None,
-    y_lim=None,
+    y_lim=[0.7,6.5],
     y_ticks=None,
     x_ticks=None,
     legend_loc="best",
@@ -56,7 +56,8 @@ def set_canvas(
     legendfsize=15,
     showlegend=False,
 ):
-    # ax.set_facecolor(("#c8cbcf"))
+    ax.set_facecolor(("#c8cbcf"))
+    # ax.set_facecolor((1.0, 1.0, 1.0, 0.0))
 
     x_label = fix_label(x_label)
     y_label = fix_label(y_label)
@@ -99,7 +100,7 @@ def set_canvas(
         ax.set_ylim(y_lim[0], y_lim[1])
 
     if showgrid:
-        ax.grid(alpha=0.5, color="white", linestyle="-", zorder=0)
+        ax.grid(alpha=1, color="white", linestyle="-", zorder=0)
 
 
 def normalize(D):
@@ -540,12 +541,13 @@ def main(args):
     elif len(objectives) == 2:
         ax = fig.add_subplot(111)
         plot_handle = ax.scatter(
-            wfq_points['obj1'],
             wfq_points['obj2'],
-            color=["w"] * wfq_points['obj1'].shape[0],
+            wfq_points['obj1'],
+            # color=["w"] * wfq_points['obj1'].shape[0],
+            color=[PARETO_COLORS.get('SRSF')] * wfq_points['obj1'].shape[0],
             edgecolors=[PARETO_COLORS['PCS-jct']] * wfq_points['obj1'].shape[0],
             s=[250] * wfq_points['obj1'].shape[0],
-            linewidth=1.75,
+            linewidth=1.25,
             label="Pareto-optimal WFQ configs",
             picker=True,
             zorder=3,
@@ -556,6 +558,7 @@ def main(args):
             ax.scatter(
                 result['obj1'],
                 result['obj2'],
+                # color=PARETO_COLORS.get(result['policy']),
                 color=PARETO_COLORS.get(result['policy']),
                 edgecolors=PARETO_COLORS.get(result['policy']),
                 s=[250],
@@ -581,8 +584,8 @@ def main(args):
                 zorder=3,
             )
 
-        ax.axhline(y=0, color=COLORS['gray2'], linestyle=':')
-        ax.axvline(x=1, color=COLORS['gray2'], linestyle=':')
+        # ax.axhline(y=1, color=COLORS['gray2'], linestyle=':', linewidth=5)
+        # ax.axvline(x=0, color=COLORS['gray2'], linestyle=':', linewidth=5)
 
         # ax.plot(wfq_points['obj1'], wfq_points['obj2'], color=PARETO_COLORS['PCS-jct'], linewidth=2, zorder=2)
 
@@ -601,7 +604,7 @@ def main(args):
 
         # tuple(list(BLUE) + [1])
 
-    draw_better_marker(aspect_ratio, ax, x=0.55, y=0.55)
+    # draw_better_marker(aspect_ratio, ax, x=0.55, y=0.55)
 
     # make_axin(ax, wfq_points)
 
@@ -610,12 +613,14 @@ def main(args):
 
     set_canvas(
         ax,
-        x_label=objectives[0].get_name(),
-        y_label=objectives[1].get_name(),
+        x_label=objectives[1].get_name(),
+        y_label=objectives[0].get_name(),
         showgrid=True,
         showlegend=True,
     )
 
+    # transparent background
+    # fig.patch.set_alpha(0.0)
     fig.subplots_adjust(left=0.12, right=1, bottom=0.18, top=1)
 
     if savefig:

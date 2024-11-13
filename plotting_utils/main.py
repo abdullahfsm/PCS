@@ -7,10 +7,10 @@ def main():
     # subset of these function calls here
     # pl.plot_fig4()
     # pl.plot_fig5()
-    # pl.plot_fig6()
-    pl.plot_fig7()
+    # pl.plot_fig6b()
+    # pl.plot_fig7()
     # pl.plot_fig8()
-    # pl.plot_fig9()
+    pl.plot_fig9()
     # pl.plot_fig10()
 
 
