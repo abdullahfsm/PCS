@@ -14,6 +14,9 @@ import pickle
 import ray
 import math
 from datetime import datetime
+from utils.file_name_funcs import extract_common
+
+
 def read_pickle(fname):
     
     with open(fname,'rb') as fp:
@@ -132,7 +135,9 @@ def main(files):
         else:
             scheduler_stats[f] = wfq_eval(problem, solutions)
 
-    with open("evaluate_pareto_front_results.pkl",'wb') as fp:
+    common_file_terms = extract_common(files)
+
+    with open(f"evaluated_pareto_front_{common_file_terms}.pkl",'wb') as fp:
         pickle.dump(scheduler_stats, fp)
 
 if __name__ == '__main__':
