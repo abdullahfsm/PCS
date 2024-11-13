@@ -15,7 +15,7 @@ import ray
 import math
 from datetime import datetime
 from utils.file_name_funcs import extract_common
-
+import matplotlib.pyplot as plt
 
 def read_pickle(fname):
     
@@ -26,10 +26,6 @@ def read_pickle(fname):
                 obj.append(pickle.load(fp))
             except Exception as e:
                 return obj
-
-
-
-
 
 def wfq_eval(problem, solutions):
     scheduler_stats = []
@@ -62,7 +58,7 @@ def boost_eval(problem, solutions):
             total_gpus=problem._total_gpus,
             event_queue=copy.deepcopy(problem._event_queue),
             app_list=copy.deepcopy(problem._app_list),
-            prio_func=lambda a: (tick - a.submit_time).total_seconds() - ((1.0/gamma) * math.log(1.0/(1.0-math.exp(-1.0*gamma*a.estimated_service)))),
+            prio_func=lambda a: (a.submit_time-tick).total_seconds() - ((1.0/gamma) * math.log(1.0/(1.0-math.exp(-1.0*gamma*a.estimated_service)))),
             app_info_fn=None,
             verbosity=0,
         )
@@ -140,17 +136,60 @@ def main(files):
     with open(f"evaluated_pareto_front_{common_file_terms}.pkl",'wb') as fp:
         pickle.dump(scheduler_stats, fp)
 
+
+
+
+def plot_avg_jct_avg_pred_error(file):
+    with open(file,'rb') as fp:
+        scheduler_stats = pickle.load(fp)
+
+    boost = scheduler_stats['learnt_configs_BOOST_avg_jct_avg_pred_error_themis1.pkl'] 
+    wfq =  scheduler_stats['learnt_configs_WFQTuneWHeuristics_avg_jct_avg_pred_error_themis1.pkl']
+    
+
+    # avg jct vs avg pred_error
+
+    wfq_avg_jct = [np.mean(w['jct']) for w in wfq]
+    wfq_avg_pred_error = [np.mean(w['pred_error']) for w in wfq]
+
+
+    boost_avg_jct = [np.mean(w['jct']) for w in boost]
+    boost_avg_pred_error = [np.mean(w['pred_error']) for w in boost]
+
+
+    min_jct = min(boost_avg_jct+wfq_avg_jct)
+
+    wfq_avg_jct = [w/min_jct for w in wfq_avg_jct]
+    boost_avg_jct = [w/min_jct for w in boost_avg_jct]
+
+
+    plt.scatter(wfq_avg_jct,wfq_avg_pred_error,label='WFQ')
+    plt.scatter(boost_avg_jct,boost_avg_pred_error,label='BOOST')
+
+    plt.xlabel('avg jct')
+    plt.ylabel('avg pred_error')
+
+    plt.show()
+
+
+# evaluated_pareto_front_avg_jct_avg_pred_error_themis1.pkl
+def plot_pareto_curve(file):
+    plot_avg_jct_avg_pred_error(file)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-files",
-        help="Pareto front file names",
+        help="Pareto front/result file names",
         nargs="+",
     )
     args = parser.parse_args()
 
-    main(args.files)
+    if len(args.files) == 1 and "evaluated" in args.files[0]:
+        plot_pareto_curve(args.files[0])
+    else:
+        main(args.files)
 
 
 
