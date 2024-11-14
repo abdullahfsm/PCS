@@ -41,6 +41,7 @@ class AppMCScheduler(AppGenericScheduler):
         self._default_class_rates = copy.copy(class_detail["class_rates"])
         self._clip_demand_factor = class_detail["clip_demand_factor"]
         self._delta = class_detail["delta"]
+        self._gamma = class_detail.get("gamma", 100)
 
         assert math.isclose(float(sum(self._default_class_rates)), 1.0, abs_tol=1e-3), float(
             sum(self._default_class_rates)
@@ -159,8 +160,14 @@ class AppMCScheduler(AppGenericScheduler):
     ):
         class_apps = list(filter(lambda a: a.app_class == app_class, self._active_apps))
 
+
+        # boost based prio func
+        prio_func = lambda a: (a.submit_time - self._init_time).total_seconds() - ((1.0/self._gamma) * math.log(1.0/(1.0-math.exp(-1.0*self._gamma*a.estimated_service))))
+
+        class_apps = sorted(class_apps, key=lambda a: prio_func(a))
+
         # sort by who came first
-        class_apps = sorted(class_apps, key=lambda a: a.app_id)
+        # class_apps = sorted(class_apps, key=lambda a: a.app_id)
 
         delta = self._delta
         clip_demand_factor = self._clip_demand_factor
