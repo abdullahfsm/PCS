@@ -143,8 +143,8 @@ def plot_avg_jct_avg_pred_error(file):
     with open(file,'rb') as fp:
         scheduler_stats = pickle.load(fp)
 
-    boost = scheduler_stats['learnt_configs_BOOST_avg_jct_avg_pred_error_themis1.pkl'] 
-    wfq =  scheduler_stats['learnt_configs_WFQTuneWHeuristics_avg_jct_avg_pred_error_themis1.pkl']
+    boost = scheduler_stats['learnt_configs_BOOST_avg_jct_avg_pred_error_gavel.pkl'] 
+    wfq =  scheduler_stats['learnt_configs_WFQTuneWoHeuristics_avg_jct_avg_pred_error_gavel.pkl']
     
 
     # avg jct vs avg pred_error
@@ -164,7 +164,7 @@ def plot_avg_jct_avg_pred_error(file):
 
 
     plt.scatter(wfq_avg_jct,wfq_avg_pred_error,label='WFQ')
-    plt.scatter(boost_avg_jct,boost_avg_pred_error,label='BOOST')
+    # plt.scatter(boost_avg_jct,boost_avg_pred_error,label='BOOST')
 
     plt.xlabel('avg jct')
     plt.ylabel('avg pred_error')

@@ -85,6 +85,11 @@ class FlexTune(FloatProblem):
 
         # print(f"solution: {solution} class_detail: {class_detail}")
 
+        try:
+            pass
+        except Exception as e:
+            raise e
+
         scheduler = AppMCScheduler(
             total_gpus=self._total_gpus,
             event_queue=copy.deepcopy(self._event_queue),
@@ -96,7 +101,14 @@ class FlexTune(FloatProblem):
         scheduler.set_estimator()
 
         tick = datetime.now()
-        scheduler.run()
+
+        try:
+            scheduler.run()
+        except Exception as e:
+            print(class_detail)
+            raise e
+
+
         tock = datetime.now()
 
         objectives = self.__get_objective_value(scheduler, True)
@@ -170,17 +182,27 @@ class FlexTuneWoHeuristics(FlexTune):
             total_gpus, app_list, event_queue, objectives
         )
 
-        self.number_of_variables = 13
         self.number_of_constraints = 0
+
+
 
         # num_classes
         # T1,T2,T3,T4,T5
         # R1,R2,R3,R4,R5
+        # Gamma
+
+
+        self.lower_bound = [1.0] + ([1.0] * 5) + ([0.0] * 5) + [1e-10]
+        self.upper_bound = [5.5] + ([max(self._service_times)] * 5) + ([1.0] * 5) + [1e-5]
+
         # Clip_factor
-        self.lower_bound = [1.0] + [1.0] * 5 + [0.0] * 5 + [0.0] + [0.01]
-        self.upper_bound = (
-            [5.5] + [max(self._service_times)] * 5 + [1.0] * 5 + [1.0] + [0.9]
-        )
+        # Delta
+        if self._total_gpus > 1:
+            self.lower_bound += [0.0, 0.01]
+            self.upper_bound += [1.0, 0.9]
+
+        self.number_of_variables = len(self.lower_bound)
+
 
     def get_name(self) -> str:
         return "FlexTuneWoHeuristics"
@@ -189,8 +211,13 @@ class FlexTuneWoHeuristics(FlexTune):
         num_classes = int(solution.variables[0])
         Ts = solution.variables[1 : 1 + num_classes]
         Rs = solution.variables[6 : 6 + num_classes]
-        clip_demand_factor = solution.variables[-2]
-        delta = solution.variables[-1]
+        gamma = solution.variables[11]
+        clip_demand_factor = 0.5
+        delta = 0.5
+
+        if self._total_gpus > 1:            
+            clip_demand_factor = solution.variables[12]
+            delta = solution.variables[13]
 
         thresholds = self.__eval_T(Ts)
         rates = self.__eval_R(Rs)
@@ -201,6 +228,7 @@ class FlexTuneWoHeuristics(FlexTune):
             "class_rates": rates,
             "clip_demand_factor": clip_demand_factor,
             "delta": delta,
+            "gamma": gamma,
         }
 
         return class_detail
@@ -281,16 +309,23 @@ class FlexTuneWHeuristics(FlexTune):
         super(FlexTuneWHeuristics, self).__init__(
             total_gpus, app_list, event_queue, objectives
         )
-        self.number_of_variables = 4
         self.number_of_constraints = 0
 
         _, _, cov_history = comp_thresholds(
             self._service_times, cov_thresh=float("inf")
         )
 
-        # T, R, Clip_factor
-        self.lower_bound = [0.001, -3.0, 0.0, 0.01]
-        self.upper_bound = [max(cov_history) + 1.0, 3.0, 1.0, 0.9]
+        # T, R, gamma, optionally (Clip_factor, delta)
+
+        self.lower_bound = [0.001, -3.0, 1e-10]
+        self.upper_bound = [max(cov_history) + 1.0, 3.0, 1e-3]
+
+
+        if total_gpus > 1:    
+            self.lower_bound += [0.0, 0.01]
+            self.upper_bound += [1.0, 0.9]
+
+        self.number_of_variables = len(self.lower_bound)
 
     def get_name(self) -> str:
         return "FlexTuneWHeuristics"
@@ -298,8 +333,15 @@ class FlexTuneWHeuristics(FlexTune):
     def solution_transformer(self, solution):
         T = solution.variables[0]
         R = solution.variables[1]
-        clip_demand_factor = solution.variables[2]
-        delta = solution.variables[3]
+        gamma = solution.variables[2]
+
+        clip_demand_factor = 0.5
+        delta = 0.1
+
+        if self._total_gpus > 1:
+            clip_demand_factor = solution.variables[3]
+            delta = solution.variables[4]
+
 
         thresholds = self.__eval_T(T)
         rates = self.__eval_R(R, len(thresholds))
@@ -308,6 +350,7 @@ class FlexTuneWHeuristics(FlexTune):
             "num_classes": len(thresholds),
             "class_thresholds": thresholds,
             "class_rates": rates,
+            "gamma": gamma,
             "clip_demand_factor": clip_demand_factor,
             "delta": delta,
         }
@@ -548,7 +591,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-use_heuristics", type=int, help="use heuristics 1/0", default=1
     )
-    parser.add_argument("-max_eval", type=int, help="max_eval", default=1280)
+    parser.add_argument("-max_eval", type=int, help="max_eval", default=4096)
     parser.add_argument("-total_gpus", type=int, help="total_gpus", default=64)
     parser.add_argument("-load", type=float, help="load", default=0.8)
     parser.add_argument("-num_apps", type=int, help="num_apps", default=2000)
@@ -561,7 +604,7 @@ if __name__ == "__main__":
         "-objectives", nargs="+", help="list of objectives", type=str, required=True
     )
     parser.add_argument(
-        "-population_size", help="size of population", type=int, default=70
+        "-population_size", help="size of population", type=int, default=500
     )
 
     args = parser.parse_args()
@@ -602,6 +645,11 @@ if __name__ == "__main__":
             models,
         )
 
+
+
+    # print(f'ABD_DEBUG: app_list[834].estimated_service: {app_list[834].estimated_service}')
+    # sys.exit(1)
+
     if use_heuristics:
         problem = FlexTuneWHeuristics(total_gpus, app_list, event_queue, objectives)
     else:
@@ -630,7 +678,7 @@ if __name__ == "__main__":
     algorithm = SPEA2(
         problem=problem,
         population_size=args.population_size,
-        offspring_population_size=int(args.population_size * 1.5),
+        offspring_population_size=int(args.population_size),
         mutation=PolynomialMutation(
             probability=1.0 / problem.number_of_variables, distribution_index=20
         ),

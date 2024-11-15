@@ -70,10 +70,10 @@ class BoostTune(FloatProblem):
         self.number_of_constraints = 0
 
         # boost gamma
-        self.lower_bound = [1e-11]
+        self.lower_bound = [1e-10]
         
         # fix this later
-        self.upper_bound = [5]
+        self.upper_bound = [1e-4]
 
         # ['mean_pred','mean_jct']
 
@@ -91,7 +91,7 @@ class BoostTune(FloatProblem):
             total_gpus=self._total_gpus,
             event_queue=copy.deepcopy(self._event_queue),
             app_list=copy.deepcopy(self._app_list),
-            prio_func=lambda a: (tick - a.submit_time).total_seconds() - ((1.0/gamma) * math.log(1.0/(1.0-math.exp(-1.0*gamma*a.estimated_service)))),
+            prio_func=lambda a: (a.submit_time - tick).total_seconds() - ((1.0/gamma) * math.log(1.0/(1.0-math.exp(-1.0*gamma*a.estimated_service)))),
             app_info_fn=None,
             verbosity=0,
         )
@@ -246,7 +246,7 @@ if __name__ == "__main__":
         help="which model type to use",
     )
 
-    parser.add_argument("-max_eval", type=int, help="max_eval", default=1280)
+    parser.add_argument("-max_eval", type=int, help="max_eval", default=4096)
     parser.add_argument("-total_gpus", type=int, help="total_gpus", default=64)
     parser.add_argument("-load", type=float, help="load", default=0.8)
     parser.add_argument("-num_apps", type=int, help="num_apps", default=2000)
@@ -259,7 +259,7 @@ if __name__ == "__main__":
         "-objectives", nargs="+", help="list of objectives", type=str, required=True
     )
     parser.add_argument(
-        "-population_size", help="size of population", type=int, default=70
+        "-population_size", help="size of population", type=int, default=100
     )
 
     args = parser.parse_args()
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     algorithm = SPEA2(
         problem=problem,
         population_size=args.population_size,
-        offspring_population_size=int(args.population_size * 1.5),
+        offspring_population_size=int(args.population_size),
         mutation=PolynomialMutation(
             probability=1.0 / problem.number_of_variables, distribution_index=20
         ),

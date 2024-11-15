@@ -94,67 +94,6 @@ class AppMCScheduler(AppGenericScheduler):
         app.app_class = self.classifier(app)
         # self.__clip_demand(app)
 
-    def compute_allocation_non_work_serving(self, event_time):
-        class_demand = [0] * self._num_classes
-        class_allocation = [0] * self._num_classes
-        self._class_rates = self._default_class_rates[:]
-
-        for app in self._active_apps:
-            class_demand[app.app_class] += app.demand
-
-        total_demand = sum(class_demand)
-        residual = sum(self._default_class_rates)
-
-        tries = 0
-
-        while residual > 0 and total_demand > 0:
-            for i in range(self._num_classes):
-                allocation = min(self._class_rates[i], class_demand[i])
-
-                if math.isclose(float(allocation), 0, abs_tol=1e-3):
-                    allocation = 0
-
-                class_allocation[i] += allocation
-                class_demand[i] -= allocation
-                residual -= allocation
-                total_demand -= allocation
-
-                if math.isclose(float(class_demand[i]), 0, abs_tol=1e-3):
-                    self._class_rates[i] = 0
-                    class_demand[i] = 0
-
-            if math.isclose(float(residual), 0.0, abs_tol=1e-3) or math.isclose(
-                float(total_demand), 0.0, abs_tol=1e-3
-            ):
-                break
-
-            R = sum(self._class_rates)
-            if R > 0:
-                self._class_rates = [
-                    frac(residual * self._class_rates[i], R)
-                    for i in range(self._num_classes)
-                ]
-
-            tries += 1
-
-            if tries > 100:
-                break
-                # raise Exception("Too many while loops")
-
-        self._class_rates = class_allocation[:]
-        app_id_to_allocation = {}
-
-        for app in self._active_apps:
-            # app_id_to_allocation[app.app_id] = min(class_allocation[app.app_class] if class_allocation[app.app_class] >= app.min_demand else 0, app.demand)
-            app_id_to_allocation[app.app_id] = float(
-                min(class_allocation[app.app_class], app.demand)
-            )
-            class_allocation[app.app_class] -= app_id_to_allocation[app.app_id]
-
-        assert math.isclose(float(sum(class_allocation)), 0, abs_tol=1e-3), class_allocation
-
-        return app_id_to_allocation
-
     def __intra_class_allocation(
         self, app_class, class_allocation, app_id_to_allocation
     ):
@@ -164,7 +103,15 @@ class AppMCScheduler(AppGenericScheduler):
         # boost based prio func
         prio_func = lambda a: (a.submit_time - self._init_time).total_seconds() - ((1.0/self._gamma) * math.log(1.0/(1.0-math.exp(-1.0*self._gamma*a.estimated_service))))
 
-        class_apps = sorted(class_apps, key=lambda a: prio_func(a))
+        try:
+            class_apps = sorted(class_apps, key=lambda a: prio_func(a))
+        except Exception as e:
+            print('-'*80)
+            for a in class_apps:
+                print(f"a.app_id: {a.app_id} a.estimated_service: {a.estimated_service}")
+                print('-'*80)
+            raise e
+        
 
         # sort by who came first
         # class_apps = sorted(class_apps, key=lambda a: a.app_id)

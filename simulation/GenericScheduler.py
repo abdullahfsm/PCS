@@ -174,7 +174,9 @@ class AppGenericScheduler(object):
         # make decisions based on estimates. counts based on actual ones            
         # job.estimated remaining service times have been updated as well
         app.estimated_remaining_service = sum([job.estimated_remaining_service for job in app.jobs.values()])
-        app.estimated_service = app.estimated_remaining_service
+        
+        # TODO: need to see if this is needed. Commenting out for now
+        # app.estimated_service = app.estimated_remaining_service
 
     def update_remaining_service(self, event_time, app):
         
@@ -187,10 +189,11 @@ class AppGenericScheduler(object):
                 job.remaining_service -= job.thrpt(job.allocation) * (event_time - self._last_event_time).total_seconds()
                 app.remaining_service -= job.thrpt(job.allocation) * (event_time - self._last_event_time).total_seconds()
                 
-                self.estimate_app_service_time(app)
-
                 assert(job.remaining_service >= -1e6 ), job.remaining_service
-                    
+        
+            self.estimate_app_service_time(app)
+            
+
     def progress_active_apps(self, event_time):    
 
         for app in self._active_apps:
@@ -210,7 +213,6 @@ class AppGenericScheduler(object):
 
             # (re)start_app, simply change rate, preempt_app
 
-            # app.update_allocation(min(int(self._app_id_to_allocation[app.app_id]), app.demand))
             app.update_allocation(min((self._app_id_to_allocation[app.app_id]), app.demand))
 
 
@@ -247,9 +249,6 @@ class AppGenericScheduler(object):
     def update_end_events(self, event_time):
 
         # assuming app.allocation is the most recent one and individual jobs have been assigned a rate
-
-        
-
         
         self._closest_end_event = None
 
@@ -262,7 +261,7 @@ class AppGenericScheduler(object):
 
                 projected_end_time = datetime.max
 
-                if math.isclose(job.allocation, 0) and not math.isclose(job.remaining_service, 0):
+                if math.isclose(job.allocation, 0) and not math.isclose(job.remaining_service, 0, abs_tol=1e-4):
                     projected_end_time = datetime.max
                 else:
 
@@ -271,10 +270,14 @@ class AppGenericScheduler(object):
                     #     job.remaining_service = 0
                     #     job.attempts[-1]["end_time"] = event_time
 
-                    if math.isclose(job.remaining_service, 0):
+                    if math.isclose(job.remaining_service, 0, abs_tol=1e-4):
 
                         job.remaining_service = 0
                         projected_end_time = event_time
+                        # just end job now
+                        self.end_job(job, app, event_time)
+                        return
+
 
                     else:    
 
@@ -393,85 +396,23 @@ class AppGenericScheduler(object):
     def sim_estimate(self, app, event_time):
 
 
-        # tick = datetime.now()
-
-
-        # promise = self._ray_queue.put_async([self._estimator,app.app_id,event_time])
-        # promise = self._ray_queue.put([self._estimator,app.app_id,event_time])
-        
-        # self._snap_shots.append(ray.put([self._active_apps,app.app_id,event_time]))
-        # self._snap_shots.append([self._active_apps,app.app_id,event_time])
-        
         estimator = self.__snap_shot()
 
         self._snap_shots.append([estimator,app.app_id,event_time])
-        
-        # pickle.dump([self._active_apps,app.app_id,event_time,self._last_event_time], self._pp)
-        # self._ray_queue.put()
-
-        # f = scheduler_run_ray.remote(self._estimator,app.app_id,event_time)
-        # tock = datetime.now()
                 
-
-        # self._perf_timer.append([len(self._active_apps),(tock-tick).total_seconds()])
-        
-        
         if len(self._snap_shots) == self._estimate_batch:
             future = multi_runner.remote(self._snap_shots)
             self._snap_shots = list()
             return future
         return None
-        
-    def sim_estimate_old(self, app):
 
-        temp_event_queue = self._event_queue
-        temp_app_list = self._app_list
-
-        self._event_queue = list()
-        self._app_list = {}
-
-        snap_shot = copy.deepcopy(self)
-
-        for virtual_app in snap_shot._active_apps:
-            snap_shot._app_list[virtual_app.app_id] = virtual_app
-
-        snap_shot._estimate = False
-        snap_shot._suppress_print = True
-        snap_shot._verbosity = 0
-
-        def break_cond(v_app):
-            if v_app.status == App.END:
-                return True
-            return False
-
-
-        snap_shot.run(partial(break_cond, snap_shot._app_list[app.app_id]))
-        
-        app.update_estimates(snap_shot._app_list[app.app_id].start_time,
-                            snap_shot._app_list[app.app_id].end_time)
-
-        self._event_queue = temp_event_queue
-        self._app_list = temp_app_list
-
-
-    def handle_job_end_event(self, event):
-        
-
-        app = self._app_list[event.app_id]
-        job = app.jobs[event.job_id]
-
-
-        # assert(math.isclose(job.remaining_service, 0.0, abs_tol=0.01)), (self._active_apps[-1].app_id)
-        assert(math.isclose(job.remaining_service, 0.0, abs_tol=0.01)), (job.remaining_service)
-        
-
-        app.on_job_end(job.job_id, event.event_time)
+    def end_job(self, job, app, event_time):
+        app.on_job_end(job.job_id, event_time)
         
 
         self._num_finished_jobs += 1
 
-        
-
+    
         job_statuses = [j.status == Job.END for j in app.jobs.values()]
 
         # all_jobs_have_finished
@@ -479,7 +420,6 @@ class AppGenericScheduler(object):
 
             # stats for gpu util
             # self.log_clusterlog_app_info_stats(event.event_time)
-
 
             app.status = App.END
             app.end_time = event.event_time
@@ -492,6 +432,18 @@ class AppGenericScheduler(object):
                     break
                 
             self._num_finished_apps += 1
+
+
+    def handle_job_end_event(self, event):
+        
+
+        app = self._app_list[event.app_id]
+        job = app.jobs[event.job_id]
+
+
+        assert(math.isclose(job.remaining_service, 0.0, abs_tol=0.01)), (job.remaining_service)
+        
+        self.end_job(job, app, event.event_time)
 
 
 
