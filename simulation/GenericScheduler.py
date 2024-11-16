@@ -422,7 +422,7 @@ class AppGenericScheduler(object):
             # self.log_clusterlog_app_info_stats(event.event_time)
 
             app.status = App.END
-            app.end_time = event.event_time
+            app.end_time = event_time
 
             # remove from active_apps
             for i, a in enumerate(self._active_apps):
