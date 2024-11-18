@@ -44,7 +44,7 @@ def wfq_eval(problem, solutions):
 
         scheduler.set_estimator()        
         scheduler.run()
-        scheduler_stats.append(compute_stats(scheduler))
+        scheduler_stats.append(compute_stats(scheduler, attribs=class_detail))
     return scheduler_stats
 
 def boost_eval(problem, solutions):
@@ -65,10 +65,10 @@ def boost_eval(problem, solutions):
 
         scheduler.set_estimator()        
         scheduler.run()
-        scheduler_stats.append(compute_stats(scheduler))
+        scheduler_stats.append(compute_stats(scheduler, attribs=gamma))
     return scheduler_stats
 
-def compute_stats(scheduler, estimate=True):
+def compute_stats(scheduler, estimate=True, attribs=None):
     jct = list()
     pred_error = list()
     unfairness = list()
@@ -103,6 +103,7 @@ def compute_stats(scheduler, estimate=True):
         "jct": jct,
         "pred_error": pred_error,
         "unfairness": unfairness,
+        "attribs": attribs,
         # "avg_jct": np.mean(jct),
         # "avg_pred_error": np.mean(pred_error),
         # "p99_jct": np.quantile(jct, 0.99),
@@ -114,6 +115,42 @@ def compute_stats(scheduler, estimate=True):
     return result_dic
 
 
+def SRSF_eval(problem):
+    scheduler_stats = []
+
+
+    scheduler = AppPrioScheduler(
+        total_gpus=problem._total_gpus,
+        event_queue=copy.deepcopy(problem._event_queue),
+        app_list=copy.deepcopy(problem._app_list),
+        prio_func=lambda a: a.demand * a.estimated_remaining_service/(a.jobs[0].thrpt(a.demand) if len(a.jobs) == 1 else a.demand),
+        app_info_fn=None,
+        verbosity=0,
+    )
+
+    scheduler.set_estimator()        
+    scheduler.run()
+    scheduler_stats.append(compute_stats(scheduler))
+    return scheduler_stats
+
+
+
+def FIFO_eval(problem):
+    scheduler_stats = []
+
+    scheduler = AppPrioScheduler(
+        total_gpus=problem._total_gpus,
+        event_queue=copy.deepcopy(problem._event_queue),
+        app_list=copy.deepcopy(problem._app_list),
+        prio_func=lambda a: a.submit_time,
+        app_info_fn=None,
+        verbosity=0,
+    )
+
+    scheduler.set_estimator()        
+    scheduler.run()
+    scheduler_stats.append(compute_stats(scheduler))
+    return scheduler_stats
 
 def main(files):
     
@@ -131,23 +168,116 @@ def main(files):
         else:
             scheduler_stats[f] = wfq_eval(problem, solutions)
 
+    scheduler_stats['SRSF'] = SRSF_eval(problem)
+    scheduler_stats['FIFO'] = FIFO_eval(problem)
+
     common_file_terms = extract_common(files)
 
     with open(f"evaluated_pareto_front_{common_file_terms}.pkl",'wb') as fp:
         pickle.dump(scheduler_stats, fp)
 
 
+def compute_avg_jct_avg_pred_error(schedulers):
+    data = []
+    for scheduler_name, scheduler in schedulers.items():
+        avg_jcts = [np.mean(w['jct']) for w in scheduler]
+        avg_pred_errors = [np.mean(w['pred_error']) for w in scheduler]
+        
+        assert(len(avg_jcts) == len(avg_pred_errors))
+
+        for avg_jct,avg_pred_error in zip(avg_jcts,avg_pred_errors):
+            data.append({
+                'policy': scheduler_name,
+                'avg_jct': avg_jct,
+                'avg_pred_error': avg_pred_error,
+            })
+
+    data_df = pd.DataFrame(data)
+
+    data_df['norm_avg_jct'] = data_df['avg_jct'] / data_df['avg_jct'].min()
+
+    return data_df
+
+
+def verify_baseline(scheduler_stats):
+    update=False    
+    obj = None
+    problem = None
+
+    for k,v in scheduler_stats.items():
+        if not '.pkl' in k:
+            continue
+
+        try:
+            obj = read_pickle(k)
+            problem = obj[-1]['PROBLEM']
+        except Exception as e:
+            obj=None
+            problem = None
+
+
+    if 'SRSF' not in scheduler_stats:        
+        scheduler_stats['SRSF'] = SRSF_eval(problem)
+        update=True
+
+    if 'FIFO' not in scheduler_stats:
+        scheduler_stats['FIFO'] = FIFO_eval(problem)
+        update = True
+
+    # update_scheduler_stats
+    if update:
+        with open(file,'wb') as fp:
+            pickle.dump(scheduler_stats, fp)
 
 
 def plot_avg_jct_avg_pred_error(file):
     with open(file,'rb') as fp:
         scheduler_stats = pickle.load(fp)
 
-    boost = scheduler_stats['learnt_configs_BOOST_avg_jct_avg_pred_error_gavel.pkl'] 
-    wfq =  scheduler_stats['learnt_configs_WFQTuneWoHeuristics_avg_jct_avg_pred_error_gavel.pkl']
-    
+    verify_baseline(scheduler_stats)
+
+
+    boost = None
+    wfq = None
+    for k in scheduler_stats.keys():
+        if 'BOOST' in k:
+            boost = scheduler_stats[k]
+        elif 'WFQ' in k:
+            wfq = scheduler_stats[k]
+
+    assert(not (wfq is None))
+    assert(not (boost is None))
+
+    srsf = scheduler_stats['SRSF']
+    fifo = scheduler_stats['FIFO']
+
+    df = compute_avg_jct_avg_pred_error({
+        'BOOST':boost,
+        'SRSF': srsf,
+        'FIFO': fifo,
+        'WFQ': wfq,
+    })
+
+
+    for policy in ['WFQ','BOOST','FIFO','SRSF']:
+
+        plt.scatter(df[df['policy'] == policy]['norm_avg_jct'].tolist(),
+                    df[df['policy'] == policy]['avg_pred_error'].tolist(),label=policy)
+
+    plt.xlabel('avg jct')
+    plt.ylabel('avg pred_error')
+
+    plt.legend()
+
+    plt.show()
+
+
+
+    return
 
     # avg jct vs avg pred_error
+
+
 
     wfq_avg_jct = [np.mean(w['jct']) for w in wfq]
     wfq_avg_pred_error = [np.mean(w['pred_error']) for w in wfq]
@@ -163,13 +293,6 @@ def plot_avg_jct_avg_pred_error(file):
     boost_avg_jct = [w/min_jct for w in boost_avg_jct]
 
 
-    plt.scatter(wfq_avg_jct,wfq_avg_pred_error,label='WFQ')
-    # plt.scatter(boost_avg_jct,boost_avg_pred_error,label='BOOST')
-
-    plt.xlabel('avg jct')
-    plt.ylabel('avg pred_error')
-
-    plt.show()
 
 
 # evaluated_pareto_front_avg_jct_avg_pred_error_themis1.pkl
