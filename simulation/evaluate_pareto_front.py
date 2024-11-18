@@ -211,6 +211,7 @@ def verify_baseline(scheduler_stats):
         try:
             obj = read_pickle(k)
             problem = obj[-1]['PROBLEM']
+            break
         except Exception as e:
             obj=None
             problem = None
@@ -224,17 +225,18 @@ def verify_baseline(scheduler_stats):
         scheduler_stats['FIFO'] = FIFO_eval(problem)
         update = True
 
-    # update_scheduler_stats
-    if update:
-        with open(file,'wb') as fp:
-            pickle.dump(scheduler_stats, fp)
+    return update
 
 
 def plot_avg_jct_avg_pred_error(file):
     with open(file,'rb') as fp:
         scheduler_stats = pickle.load(fp)
 
-    verify_baseline(scheduler_stats)
+    update = verify_baseline(scheduler_stats)
+    # update_scheduler_stats
+    if update:
+        with open(file,'wb') as fp:
+            pickle.dump(scheduler_stats, fp)
 
 
     boost = None
