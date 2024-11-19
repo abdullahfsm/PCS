@@ -21,13 +21,18 @@ import seaborn as sns
 # Set the default palette to Seaborn's tab10
 # sns.set_palette("tab10")
 
+
+# Set the global font size
+plt.rcParams.update({'font.size': 20})  # Change 14 to your desired size
+plt.figure(figsize=(8, 6))
+plt.subplots_adjust(left=0.105, right=0.99, top=0.99, bottom=0.12)
 palette = sns.color_palette("tab10")
 
 policy_plot_fmt = {
-    'WFQ':   {'color': palette[0], 'marker': 'o', 'markersize': 5},
-    'BOOST': {'color': palette[1], 'marker': '*', 'markersize': 5},
-    'FIFO':  {'color': palette[2], 'marker': '^', 'markersize': 10},
-    'SJF':  {'color': palette[3], 'marker': 'v', 'markersize': 10},
+    'WFQ':   {'color': palette[0], 'marker': 'o', 'markersize': 8},
+    'BOOST': {'color': palette[1], 'marker': '*', 'markersize': 8},
+    'FIFO':  {'color': palette[2], 'marker': '^', 'markersize': 15},
+    'SJF':  {'color': palette[3], 'marker': 'v', 'markersize': 15},
 }
 
 
@@ -221,6 +226,7 @@ def compute_avg_jct_avg_pred_error(schedulers):
         assert(len(avg_jcts) == len(avg_pred_errors))
 
         for avg_jct,avg_pred_error in zip(avg_jcts,avg_pred_errors):
+
             data.append({
                 'policy': scheduler_name,
                 'avg_jct': avg_jct,
@@ -254,6 +260,9 @@ def verify_baseline(scheduler_stats):
             obj=None
             problem = None
 
+
+    if problem is None:
+        raise ValueError("Problem is None")
 
     if 'SRSF' not in scheduler_stats:        
         scheduler_stats['SRSF'] = SRSF_eval(problem)
@@ -311,18 +320,52 @@ def plot_avg_jct_avg_pred_error(file):
         # plt.scatter(df[df['policy'] == policy]['norm_avg_jct'].tolist(),
         #             df[df['policy'] == policy]['avg_pred_error'].tolist(),label=policy)
 
+
         plt.plot(df[df['policy'] == policy]['norm_avg_jct'].tolist(),
-                 df[df['policy'] == policy]['avg_pred_error'].tolist(),label=policy,
+                 df[df['policy'] == policy]['avg_pred_error'].tolist(),
                  markevery=1,
                  marker=policy_plot_fmt[policy]['marker'],
                  color=policy_plot_fmt[policy]['color'],
                  markersize=policy_plot_fmt[policy]['markersize'])
 
 
+    ax = plt.gca()
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    alpha=0.25
+    if "themis1" in file:
+        plt.plot([0.5,1.21],[5,5], color='k', linestyle='--', alpha=alpha, linewidth=2)
+        plt.plot([1.125,1.125],[5,-1], color='k', linestyle='--', alpha=alpha, linewidth=2)
+        plt.plot([1.21,1.21],[5,-1], color='k', linestyle='--', alpha=alpha, linewidth=2)
+
+    if "gavel" in file:
+        plt.plot([0.5,2],[5,5], color='k', linestyle='--', alpha=alpha, linewidth=2)
+        plt.plot([1.1,1.1],[5,-1], color='k', linestyle='--', alpha=alpha, linewidth=2)
+        plt.plot([2,2],[5,-1], color='k', linestyle='--', alpha=alpha, linewidth=2)
+
+
+    for policy in ['WFQ','BOOST','FIFO','SJF']:
+        plt.plot([500,1000],[5000,5000],
+                linewidth=5,
+                label=policy,
+                marker=policy_plot_fmt[policy]['marker'],
+                color=policy_plot_fmt[policy]['color'],
+                markersize=15)
+        
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+        
+
     plt.xlabel('Norm. Average JCT')
     plt.ylabel('Average Prediction Error %')
 
-    plt.legend()
+
+    plt.legend(frameon=False)
+    # Remove top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+
 
     plt.savefig(file.replace('.pkl','.png'),format='png',dpi=300)
 
