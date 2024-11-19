@@ -272,7 +272,7 @@ if __name__ == "__main__":
         "-objectives", nargs="+", help="list of objectives", type=str, required=True
     )
     parser.add_argument(
-        "-population_size", help="size of population", type=int, default=100
+        "-population_size", help="size of population", type=int, default=500
     )
 
     args = parser.parse_args()
