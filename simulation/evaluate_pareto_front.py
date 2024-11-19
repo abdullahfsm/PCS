@@ -16,6 +16,21 @@ import math
 from datetime import datetime
 from utils.file_name_funcs import extract_common
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set the default palette to Seaborn's tab10
+# sns.set_palette("tab10")
+
+palette = sns.color_palette("tab10")
+
+policy_plot_fmt = {
+    'WFQ':   {'color': palette[0], 'marker': 'o', 'markersize': 5},
+    'BOOST': {'color': palette[1], 'marker': '*', 'markersize': 5},
+    'FIFO':  {'color': palette[2], 'marker': '^', 'markersize': 10},
+    'SJF':  {'color': palette[3], 'marker': 'v', 'markersize': 10},
+}
+
+
 
 def read_pickle(fname):
     
@@ -134,6 +149,25 @@ def SRSF_eval(problem):
     return scheduler_stats
 
 
+def SJF_eval(problem):
+    scheduler_stats = []
+
+
+    scheduler = AppPrioScheduler(
+        total_gpus=problem._total_gpus,
+        event_queue=copy.deepcopy(problem._event_queue),
+        app_list=copy.deepcopy(problem._app_list),
+        prio_func=lambda a: a.estimated_remaining_service,
+        app_info_fn=None,
+        verbosity=0,
+    )
+
+    scheduler.set_estimator()        
+    scheduler.run()
+    scheduler_stats.append(compute_stats(scheduler))
+    return scheduler_stats
+
+
 
 def FIFO_eval(problem):
     scheduler_stats = []
@@ -182,6 +216,7 @@ def compute_avg_jct_avg_pred_error(schedulers):
     for scheduler_name, scheduler in schedulers.items():
         avg_jcts = [np.mean(w['jct']) for w in scheduler]
         avg_pred_errors = [np.mean(w['pred_error']) for w in scheduler]
+        # avg_pred_errors = [np.quantile(w['pred_error'],0.90) for w in scheduler]
         
         assert(len(avg_jcts) == len(avg_pred_errors))
 
@@ -196,7 +231,10 @@ def compute_avg_jct_avg_pred_error(schedulers):
 
     data_df['norm_avg_jct'] = data_df['avg_jct'] / data_df['avg_jct'].min()
 
-    return data_df
+    sorted_df = data_df.sort_values(by='norm_avg_jct')
+    
+
+    return sorted_df
 
 
 def verify_baseline(scheduler_stats):
@@ -220,6 +258,11 @@ def verify_baseline(scheduler_stats):
     if 'SRSF' not in scheduler_stats:        
         scheduler_stats['SRSF'] = SRSF_eval(problem)
         update=True
+
+    if 'SJF' not in scheduler_stats:        
+        scheduler_stats['SJF'] = SJF_eval(problem)
+        update=True
+
 
     if 'FIFO' not in scheduler_stats:
         scheduler_stats['FIFO'] = FIFO_eval(problem)
@@ -251,50 +294,41 @@ def plot_avg_jct_avg_pred_error(file):
     assert(not (boost is None))
 
     srsf = scheduler_stats['SRSF']
+    sjf = scheduler_stats['SJF']
     fifo = scheduler_stats['FIFO']
 
     df = compute_avg_jct_avg_pred_error({
         'BOOST':boost,
-        'SRSF': srsf,
+        'SRTF': srsf,
+        'SJF': sjf,
         'FIFO': fifo,
         'WFQ': wfq,
     })
 
 
-    for policy in ['WFQ','BOOST','FIFO','SRSF']:
+    for i, policy in enumerate(['WFQ','BOOST','FIFO','SJF']):
 
-        plt.scatter(df[df['policy'] == policy]['norm_avg_jct'].tolist(),
-                    df[df['policy'] == policy]['avg_pred_error'].tolist(),label=policy)
+        # plt.scatter(df[df['policy'] == policy]['norm_avg_jct'].tolist(),
+        #             df[df['policy'] == policy]['avg_pred_error'].tolist(),label=policy)
 
-    plt.xlabel('avg jct')
-    plt.ylabel('avg pred_error')
+        plt.plot(df[df['policy'] == policy]['norm_avg_jct'].tolist(),
+                 df[df['policy'] == policy]['avg_pred_error'].tolist(),label=policy,
+                 markevery=1,
+                 marker=policy_plot_fmt[policy]['marker'],
+                 color=policy_plot_fmt[policy]['color'],
+                 markersize=policy_plot_fmt[policy]['markersize'])
+
+
+    plt.xlabel('Norm. Average JCT')
+    plt.ylabel('Average Prediction Error %')
 
     plt.legend()
 
-    plt.show()
+    plt.savefig(file.replace('.pkl','.png'),format='png',dpi=300)
 
 
 
     return
-
-    # avg jct vs avg pred_error
-
-
-
-    wfq_avg_jct = [np.mean(w['jct']) for w in wfq]
-    wfq_avg_pred_error = [np.mean(w['pred_error']) for w in wfq]
-
-
-    boost_avg_jct = [np.mean(w['jct']) for w in boost]
-    boost_avg_pred_error = [np.mean(w['pred_error']) for w in boost]
-
-
-    min_jct = min(boost_avg_jct+wfq_avg_jct)
-
-    wfq_avg_jct = [w/min_jct for w in wfq_avg_jct]
-    boost_avg_jct = [w/min_jct for w in boost_avg_jct]
-
-
 
 
 # evaluated_pareto_front_avg_jct_avg_pred_error_themis1.pkl
