@@ -25,7 +25,7 @@ from MCSScheduler import AppMCScheduler
 from helpers import gen_data_from_cdf
 from common import App, Job, Event
 from sim import *
-
+from boost_tuner import compute_gamma_range
 
 import pickle
 import argparse
@@ -192,8 +192,10 @@ class FlexTuneWoHeuristics(FlexTune):
         # Gamma
 
 
-        self.lower_bound = [1.0] + ([1.0] * 5) + ([0.0] * 5) + [1e-10]
-        self.upper_bound = [5.5] + ([max(self._service_times)] * 5) + ([1.0] * 5) + [1e-5]
+        gamma_range = compute_gamma_range([a.service for a in self._app_list.values()])
+
+        self.lower_bound = [1.0] + ([1.0] * 5) + ([0.0] * 5) + [gamma_range[0]]
+        self.upper_bound = [5.5] + ([max(self._service_times)] * 5) + ([1.0] * 5) + [gamma_range[1]]
 
         # Clip_factor
         # Delta

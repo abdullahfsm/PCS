@@ -46,6 +46,15 @@ class Objective(object):
         return self._label
 
 
+def compute_gamma_range(sizes, load=0.8):
+    mu = np.mean(sizes)
+    decay = (1.0-load)*(1.0/mu)
+    lower = decay * 1e-3
+    upper = decay * 1e3
+
+    return [lower, upper]
+
+
 class BoostTune(FloatProblem):
     """docstring for BoostTune"""
 
@@ -69,11 +78,15 @@ class BoostTune(FloatProblem):
         self.number_of_variables = 1
         self.number_of_constraints = 0
 
+
+        gamma_range = compute_gamma_range([a.service for a in self._app_list.values()])
+
+
         # boost gamma
-        self.lower_bound = [1e-10]
+        self.lower_bound = [gamma_range[0]]
         
         # fix this later
-        self.upper_bound = [1e-4]
+        self.upper_bound = [gamma_range[1]]
 
         # ['mean_pred','mean_jct']
 
