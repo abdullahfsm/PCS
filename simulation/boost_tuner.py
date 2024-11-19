@@ -47,8 +47,8 @@ class Objective(object):
 
 
 def compute_gamma_range(sizes, load=0.8):
-    mu = np.mean(sizes)
-    decay = (1.0-load)*(1.0/mu)
+    mu = 1.0/np.mean(sizes)
+    decay = (1.0-load)*(mu)
     lower = decay * 1e-3
     upper = decay * 1e3
 
