@@ -367,7 +367,8 @@ def plot_avg_jct_avg_pred_error(file):
 
 
 
-    plt.savefig(file.replace('.pkl','.png'),format='png',dpi=300)
+    # plt.savefig(file.replace('.pkl','.png'),format='png',dpi=300)
+    plt.savefig(file.replace('.pkl','.pdf'),format='pdf',dpi=300)
 
 
 
