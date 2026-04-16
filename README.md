@@ -4,9 +4,9 @@
 
 This artifact received all OSDI'24 artifact evaluation badges:
 
-* [Available](badges/usenixbadges-available.pdf)
-* [Functional](badges/usenixbadges-functional.pdf)
-* [Reproduced](badges/usenixbadges-reproduced.pdf)
+* [![Available](badges/usenixbadges-available.png)](badges/usenixbadges-available.pdf)
+* [![Functional](badges/usenixbadges-functional.png)](badges/usenixbadges-functional.pdf)
+* [![Reproduced](badges/usenixbadges-reproduced.png)](badges/usenixbadges-reproduced.pdf)
 
 
 ## Testbed setup
