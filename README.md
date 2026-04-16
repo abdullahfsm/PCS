@@ -1,4 +1,13 @@
-# Reproducing Results (OSDI'24) <a href="badges/usenixbadges-available.pdf"><img src="badges/usenixbadges-available.png" alt="Available badge" height="28"></a> <a href="badges/usenixbadges-functional.pdf"><img src="badges/usenixbadges-functional.png" alt="Functional badge" height="28"></a> <a href="badges/usenixbadges-reproduced.pdf"><img src="badges/usenixbadges-reproduced.png" alt="Reproduced badge" height="28"></a>
+<table width="100%">
+  <tr>
+    <td><h1>Reproducing Results (OSDI'24)</h1></td>
+    <td align="right">
+      <a href="badges/usenixbadges-available.pdf"><img src="badges/usenixbadges-available.png" alt="Available badge" height="56"></a>
+      <a href="badges/usenixbadges-functional.pdf"><img src="badges/usenixbadges-functional.png" alt="Functional badge" height="56"></a>
+      <a href="badges/usenixbadges-reproduced.pdf"><img src="badges/usenixbadges-reproduced.png" alt="Reproduced badge" height="56"></a>
+    </td>
+  </tr>
+</table>
 
 
 ## Testbed setup
