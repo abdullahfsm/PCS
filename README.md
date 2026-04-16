@@ -1,5 +1,13 @@
 # Reproducing Results (OSDI'24)
 
+## Artifact Evaluation Badges
+
+This artifact received all OSDI'24 artifact evaluation badges:
+
+* [Available](badges/usenixbadges-available.pdf)
+* [Functional](badges/usenixbadges-functional.pdf)
+* [Reproduced](badges/usenixbadges-reproduced.pdf)
+
 
 ## Testbed setup
 * For testbed setup and experiments please refer to `TESTBED.md`
